@@ -385,22 +385,22 @@ export interface SsePhaseStart {
 export interface SsePhaseComplete {
   event: "phase_complete";
   phase_id: string;
-  data: { title: string; output: any };
+  data: { title: string; output: unknown };
 }
 
 export interface SseRedTeam {
   event: "red_team";
-  data: { critique: any };
+  data: { critique: RedTeamCritique };
 }
 
 export interface SseClarify {
   event: "clarify";
-  data: { questions: any[] };
+  data: { questions: unknown[] };
 }
 
 export interface SseDiff {
   event: "diff";
-  data: { diff: any[] };
+  data: { diff: unknown[] };
 }
 
 export interface SseChatReply {

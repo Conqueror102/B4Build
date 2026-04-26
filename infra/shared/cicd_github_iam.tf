@@ -13,19 +13,22 @@ locals {
 data "aws_iam_policy_document" "cicd_terraform_state" {
   count = local.cicd_terraform_state_enabled && !var.cicd_attach_terraform_admin_policy ? 1 : 0
 
+  # ListBucket must apply only to the bucket ARN; object actions use bucket/*
   statement {
-    sid    = "TerraformStateS3"
+    sid       = "TerraformStateS3List"
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
+    resources = ["arn:aws:s3:::${var.cicd_terraform_state_s3_bucket}"]
+  }
+  statement {
+    sid    = "TerraformStateS3Objects"
     effect = "Allow"
     actions = [
-      "s3:ListBucket",
       "s3:GetObject",
       "s3:PutObject",
       "s3:DeleteObject",
     ]
-    resources = [
-      "arn:aws:s3:::${var.cicd_terraform_state_s3_bucket}",
-      "arn:aws:s3:::${var.cicd_terraform_state_s3_bucket}/*",
-    ]
+    resources = ["arn:aws:s3:::${var.cicd_terraform_state_s3_bucket}/*"]
   }
 
   statement {

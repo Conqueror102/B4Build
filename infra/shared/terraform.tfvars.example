@@ -4,9 +4,10 @@ github_org   = "your-github-org-or-username"
 github_repo  = "ai-build-advisor"
 ecr_repo_name = "b4build/backend"
 
-# GitHub Actions (same bucket string as in infra/envs/dev/backend.tf). When set, shared attaches
-# IAM to the GitHub OIDC role so deploy-backend + terraform.yml can use Terraform in CI.
-# cicd_terraform_state_s3_bucket = "your-terraform-state-bucket-name"
+# GitHub Actions: MUST match the bucket in infra/envs/dev/backend.tf (and GitHub var
+# CICD_TERRAFORM_STATE_S3_BUCKET), then run `terraform apply` in shared/ so the OIDC role
+# gets s3:ListBucket on that bucket.
+# cicd_terraform_state_s3_bucket = "terraforms-state-301276847006-us-east-1-an"
 # Optional: set false to skip AdministratorAccess; use a narrow state+ECS policy only (dev TF mostly local)
 # cicd_attach_terraform_admin_policy = true
 # cicd_terraform_dynamodb_table        = "b4build-terraform-lock"

@@ -69,7 +69,10 @@ flowchart TD
         <div>
           <h3 className="text-xl font-semibold mb-3">1. The Intake Node</h3>
           <p className="text-muted-foreground leading-relaxed">
-            The process starts when you submit a rough idea. Before doing any architecture work, the Intake Node evaluates if your idea is clear enough to proceed. If it's too vague, it halts execution and asks you exactly 3 clarifying questions.
+            The process starts when you submit a rough idea. Before doing any architecture
+            work, the Intake Node evaluates if your idea is clear enough to proceed. If
+            it&apos;s too vague, it halts execution and asks you exactly 3 clarifying
+            questions.
           </p>
         </div>
 

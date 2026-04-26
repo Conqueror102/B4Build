@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import { Clock, Cpu, DollarSign, Download, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { GradientHeading } from "@/components/brand/gradient-heading";
 import { MetricChip } from "@/components/brand/metric-chip";
 import { ChatPanel } from "@/components/plan/chat";
 import { ReportPanel } from "@/components/plan/report-panel";
@@ -13,7 +12,6 @@ import { VersionHistory } from "@/components/plan/version-history";
 import { PlanHistory } from "@/components/plan/plan-history";
 import { usePlanStream } from "@/hooks/use-plan-stream";
 import { getPlan } from "@/lib/api";
-import { cn } from "@/lib/utils";
 import type { FullPlan } from "@/lib/types";
 
 /* ------------------------------------------------------------------ */
@@ -170,8 +168,6 @@ export default function PlanPage() {
 
   // Use streamed plan if available, otherwise fall back to loaded plan
   const activePlan = stream.plan ?? existingPlan;
-  const isStreaming =
-    stream.status === "streaming" || stream.status === "connecting";
   const isComplete =
     stream.status === "complete" || (!!existingPlan && stream.status === "idle");
 

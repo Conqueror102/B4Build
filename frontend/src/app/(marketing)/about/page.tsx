@@ -24,7 +24,10 @@ export default function AboutPage() {
         <h2>The Cost of Skipping Architecture</h2>
         
         <p>
-          I built the <strong>AI Build Advisor</strong> because I've made all these mistakes. I've deployed applications that cost $400/month in OpenAI API fees because I didn't do the math on active users vs token counts. I've spent weeks building custom auth when Clerk or Supabase would have sufficed.
+          I built the <strong>AI Build Advisor</strong> because I&apos;ve made all these
+          mistakes. I&apos;ve deployed applications that cost $400/month in OpenAI API
+          fees because I didn&apos;t do the math on active users vs token counts. I&apos;ve
+          spent weeks building custom auth when Clerk or Supabase would have sufficed.
         </p>
         
         <p>
@@ -34,7 +37,12 @@ export default function AboutPage() {
         <h2>Enter the Agentic Workflow</h2>
 
         <p>
-          The AI Build Advisor is built on a <strong>multi-agent LangGraph architecture</strong>. It doesn't just spit out a generic block of text. It forces you to answer clarifying questions. It breaks down the problem into 9 distinct phases. And crucially, it employs an <em>Adversarial Red Team</em> agent whose sole job is to tear your architecture apart and find the holes before you write a single line of code.
+          The AI Build Advisor is built on a{" "}
+          <strong>multi-agent LangGraph architecture</strong>. It doesn&apos;t just spit
+          out a generic block of text. It forces you to answer clarifying questions. It
+          breaks down the problem into 9 distinct phases. And crucially, it employs an{" "}
+          <em>Adversarial Red Team</em> agent whose sole job is to tear your architecture
+          apart and find the holes before you write a single line of code.
         </p>
 
         <p>

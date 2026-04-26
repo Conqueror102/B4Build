@@ -58,7 +58,7 @@ export interface PlanStreamState {
   /** Final synthesized plan */
   plan: FullPlan | null;
   /** Diffs generated during an iteration */
-  diff: any[] | null;
+  diff: unknown[] | null;
   /** Error message if any */
   error: string | null;
   /** Running cost (updated per phase_complete event) */
@@ -351,15 +351,17 @@ export function usePlanStream(initialPlanId?: string | null) {
 
       case "clarify":
         setState((prev) => {
-          const raw = (event.data as any).questions ?? [];
-          const mapped = Array.isArray(raw)
-            ? raw
-                .map((q: any) => ({
-                  id: (q?.id ?? q?.key ?? "") as string,
-                  text: (q?.text ?? q?.question ?? "") as string,
-                }))
-                .filter((q: any) => q.id && q.text)
-            : [];
+          const raw = (event.data as { questions?: unknown }).questions;
+          const arr = Array.isArray(raw) ? raw : [];
+          const mapped = arr
+            .map((q) => {
+              const o = q as { id?: string; key?: string; text?: string; question?: string };
+              return {
+                id: String(o.id ?? o.key ?? ""),
+                text: String(o.text ?? o.question ?? ""),
+              };
+            })
+            .filter((q) => q.id && q.text);
           return {
             ...prev,
             status: "clarifying",
@@ -433,14 +435,18 @@ export function usePlanStream(initialPlanId?: string | null) {
 
       case "diff":
         setState((prev) => {
-          const diffArray = (event.data as any).diff;
-          if (!diffArray || diffArray.length === 0) return prev;
-          
+          const d = event.data as { diff?: unknown[] };
+          const diffArray = d.diff;
+          if (!Array.isArray(diffArray) || diffArray.length === 0) return prev;
+
           // Format diffs for chat display
           const summary = diffArray
-            .map((d: any) => {
-              const op = d.op === "add" ? "Added" : d.op === "remove" ? "Removed" : "Updated";
-              const path = d.path.replace(/\//g, " → ").replace(/^ → /, "");
+            .map((item) => {
+              const row = item as { op?: string; path: string };
+              const op = row.op === "add" ? "Added" : row.op === "remove" ? "Removed" : "Updated";
+              const path = String(row.path ?? "")
+                .replace(/\//g, " → ")
+                .replace(/^ → /, "");
               return `• ${op}: ${path}`;
             })
             .join("\n");
@@ -470,7 +476,9 @@ export function usePlanStream(initialPlanId?: string | null) {
             {
               id: crypto.randomUUID(),
               role: "assistant",
-              content: (event.data as any).message || '',
+              content: String(
+                (event.data as { message?: unknown }).message ?? ""
+              ),
               timestamp: Date.now(),
             },
           ],

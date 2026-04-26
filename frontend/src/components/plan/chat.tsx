@@ -99,7 +99,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
                 ul: (props) => <ul {...props} />,
                 ol: (props) => <ol {...props} />,
                 // Customize code blocks
-                code: ({ inline, className, children, ...props }) => 
+                code: ({ inline, className: _c, children, ...props }) =>
                   inline ? (
                     <code {...props}>{children}</code>
                   ) : (

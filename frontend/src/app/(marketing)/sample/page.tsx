@@ -1,7 +1,7 @@
 "use client";
 
 import { ReportPanel } from "@/components/plan/report-panel";
-import type { FullPlan, RedTeamCritique } from "@/lib/types";
+import type { FullPlan } from "@/lib/types";
 import type { PhaseState } from "@/hooks/use-plan-stream";
 
 // MOCK DATA for the Sample Page (shape is illustrative; cast for strict FullPlan typing)
@@ -170,12 +170,12 @@ export default function SamplePlanPage() {
           <p className="text-muted-foreground mb-8">
             This is a read-only sample. Sign up to generate your own architecture plans, challenge the AI, and iterate on constraints.
           </p>
-          <a
+          <Link
             href="/plan/new"
             className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
           >
             Start Building
-          </a>
+          </Link>
         </div>
       </div>
     </div>

@@ -53,7 +53,7 @@ export default function PricingPage() {
               </li>
               <li className="flex items-center gap-3">
                 <Check className="h-4 w-4 text-primary" />
-                <span>Iterative "What-If" sandbox</span>
+                <span>Iterative &ldquo;What-If&rdquo; sandbox</span>
               </li>
             </ul>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { History, Check, Loader2 } from "lucide-react";
+import { History, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -45,16 +45,18 @@ export function VersionHistory({ planId, onSelectVersion }: VersionHistoryProps)
     }
   }, [planId]);
 
-  React.useEffect(() => {
-    if (open && versions.length === 0) {
-      fetchVersions();
-    }
-  }, [open, versions.length, fetchVersions]);
-
   if (!planId) return null;
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next && versions.length === 0) {
+          void fetchVersions();
+        }
+      }}
+    >
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="h-8 gap-2 border-border/60">
           <History className="h-3.5 w-3.5" />
