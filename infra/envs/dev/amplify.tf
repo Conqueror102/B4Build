@@ -27,10 +27,12 @@ frontend:
     preBuild:
       commands:
         - nvm use 20 || true
-        - cd frontend && npm ci
+        - corepack enable
+        - corepack prepare pnpm@9 --activate
+        - cd frontend && pnpm install --frozen-lockfile
     build:
       commands:
-        - cd frontend && npm run build
+        - cd frontend && pnpm run build
   artifacts:
     baseDirectory: frontend
     files:
