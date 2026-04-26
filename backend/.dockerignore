@@ -1,0 +1,50 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+.eggs/
+*.egg-info/
+.eggs
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+
+# Local env and secrets
+.env
+.env.*
+!.env.example
+
+# Databases and local data (e.g. sqlite test dbs)
+*.db
+*.sqlite3
+
+# Tests and tooling (not needed in production image)
+tests/
+*.md
+!README.md
+
+# Build / dist
+dist/
+build/
+*.spec
+
+# IDE
+.idea/
+.vscode/
+
+# Misc
+.DS_Store
+Thumbs.db
+*.log

@@ -1,0 +1,20 @@
+# Copy to terraform.tfvars (gitignored)
+project_name  = "b4build"
+environment  = "dev" # resource naming only; not the same as APP_ENV
+# Must match backend Settings: development | staging | production
+app_env = "staging"
+aws_region     = "us-east-1"
+
+# Must match the ECR repo from infra/shared
+ecr_repository_name = "b4build/backend"
+# "latest" locally; GitHub deploy-backend overwrites in CI with the git commit SHA (when CICD_TERRAFORM_STATE_S3_BUCKET is set)
+# ecr_image_tag = "latest"
+
+# Optional: API hostname for ACM (DNS validation at your registrar, not Route 53)
+# api_fqdn = "api.example.com"
+# Set true only after ACM shows ISSUED in the console
+# enable_https_listener = true
+
+# Amplify: created by default. Git: connect in AWS console when the repo exists (no token in Terraform).
+# create_amplify_app = true
+# next_public_clerk_publishable_key = "pk_test_..."

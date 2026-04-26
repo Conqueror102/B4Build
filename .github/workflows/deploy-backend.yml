@@ -1,0 +1,114 @@
+# Build & push to ECR, then pin the ECS service to this commit's image tag (immutable) via
+# `terraform apply` in envs/dev — standard GitOps. Requires: shared Terraform applied with
+# `cicd_terraform_state_s3_bucket` and repo variable CICD_TERRAFORM_STATE_S3_BUCKET set
+# to the same bucket name. Otherwise falls back to force-new-deployment (still :latest in task def).
+name: Deploy Backend to ECS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  TF_VERSION: 1.6.6
+  ECR_REPOSITORY: b4build/backend
+  ECS_CLUSTER: b4build-dev
+  ECS_SERVICE: b4build-backend
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    # Same bucket as infra/envs/dev backend.tf; enables Terraform pin (apply must succeed with OIDC)
+    # Configure: Settings → Variables → CICD_TERRAFORM_STATE_S3_BUCKET
+    # Must match: infra/shared.terraform.tfvars cicd_terraform_state_s3_bucket (and applied)
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          set -e
+          cd backend
+          docker build -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .
+          docker tag "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+          echo "ecr_url=$ECR_REGISTRY/$ECR_REPOSITORY" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Terraform
+        if: vars.CICD_TERRAFORM_STATE_S3_BUCKET != ''
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Pin task definition to this image (terraform apply, targeted)
+        if: vars.CICD_TERRAFORM_STATE_S3_BUCKET != ''
+        id: pin
+        run: |
+          set -e
+          cd infra/envs/dev
+          terraform init -input=false
+          # Immutable tag = git commit; -refresh=false avoids a full service refresh; same pattern as many ECS+TF setups
+          terraform apply -auto-approve -lock-timeout=5m -refresh=false \
+            -var="ecr_image_tag=${{ github.sha }}" \
+            -target=aws_ecs_task_definition.backend \
+            -target=aws_ecs_task_definition.migrations \
+            -target=aws_ecs_service.backend
+
+      - name: Force new deployment (no Terraform state / pin variable)
+        if: vars.CICD_TERRAFORM_STATE_S3_BUCKET == ''
+        run: |
+          echo "::warning::CICD_TERRAFORM_STATE_S3_BUCKET is not set. Rolling ECS without updating Terraform. Set the repo variable and apply infra/shared to pin images by commit SHA."
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_SERVICE" \
+            --force-new-deployment \
+            --region "$AWS_REGION"
+
+      - name: Wait for service stability
+        run: |
+          aws ecs wait services-stable \
+            --cluster "$ECS_CLUSTER" \
+            --services "$ECS_SERVICE" \
+            --region "$AWS_REGION"
+        env:
+          ECS_CLUSTER: b4build-dev
+          ECS_SERVICE: b4build-backend
+
+      - name: Summary
+        run: |
+          echo "✅ Deploy finished"
+          echo "Image: ${{ steps.build-image.outputs.image }}"
+          echo "Cluster: ${{ env.ECS_CLUSTER }} / service: ${{ env.ECS_SERVICE }}"
+          if [ -n "${{ vars.CICD_TERRAFORM_STATE_S3_BUCKET }}" ]; then
+            echo "Terraform: ecr_image_tag pinned to this commit (see ECS task definition)"
+          else
+            echo "Tip: set CICD_TERRAFORM_STATE_S3_BUCKET + apply infra/shared to pin by git SHA"
+          fi

@@ -1,0 +1,5 @@
+# Copy to `backend.hcl` in this folder (gitignored) and set your S3 state bucket
+# (same bucket as in infra/shared — one bucket, different .tfstate keys in backend.tf).
+# Then: terraform init -backend-config=backend.hcl
+
+bucket = "YOUR_S3_STATE_BUCKET_NAME"

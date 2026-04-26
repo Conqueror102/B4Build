@@ -1,0 +1,19 @@
+# AWS Amplify uses this when your repo is connected (same as inline build in Terraform for first run).
+# Next.js lives in /frontend. Env NEXT_PUBLIC_API_URL is set in Amplify by Terraform; override if needed in console.
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - nvm use 20 || true
+        - cd frontend && npm ci
+    build:
+      commands:
+        - cd frontend && npm run build
+  artifacts:
+    baseDirectory: frontend
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - frontend/node_modules/**/*
