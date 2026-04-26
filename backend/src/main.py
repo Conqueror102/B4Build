@@ -26,9 +26,11 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     logger = get_logger(__name__)
 
-    if settings.sentry_dsn:
+    dsn = (settings.sentry_dsn or "").strip()
+    # Secret may still be Terraform placeholder "REPLACE_..."; must be a real https DSN
+    if dsn.startswith("https://"):
         sentry_sdk.init(
-            dsn=settings.sentry_dsn,
+            dsn=dsn,
             environment=settings.app_env,
             traces_sample_rate=0.1 if settings.is_production else 1.0,
             send_default_pii=False,
