@@ -33,6 +33,10 @@ def init_engine(database_url: str) -> None:
         url = "postgresql+asyncpg://" + url[len("postgresql://") :]
 
     is_sqlite = url.startswith("sqlite")
+    if not is_sqlite and "postgresql" in url:
+        u = url.lower()
+        if "ssl=" not in u and "sslmode" not in u:
+            url = f"{url}{'&' if '?' in url else '?'}ssl=true"
 
     if is_sqlite:
         engine = create_async_engine(url, future=True)

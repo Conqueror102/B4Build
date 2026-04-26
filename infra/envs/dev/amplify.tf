@@ -28,7 +28,7 @@ frontend:
       commands:
         - nvm use 20 || true
         - corepack enable
-        - corepack prepare pnpm@9 --activate
+        - corepack prepare pnpm@9.15.9 --activate
         - cd frontend && pnpm install --frozen-lockfile
     build:
       commands:

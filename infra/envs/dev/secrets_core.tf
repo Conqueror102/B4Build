@@ -72,9 +72,10 @@ resource "aws_secretsmanager_secret_version" "database_url" {
 }
 
 locals {
-  # Percent-encode special chars in password for URL
+  # Percent-encode special chars in password for URL. `ssl=true` is required for RDS
+  # (otherwise "no pg_hba... no encryption" with asyncpg).
   database_url = format(
-    "postgresql://%s:%s@%s:%s/%s",
+    "postgresql://%s:%s@%s:%s/%s?ssl=true",
     "b4build_admin",
     urlencode(random_password.db.result),
     module.db.db_instance_address,
