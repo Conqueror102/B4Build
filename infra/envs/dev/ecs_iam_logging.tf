@@ -26,6 +26,7 @@ data "aws_iam_policy_document" "ecs_exec_secrets" {
       aws_secretsmanager_secret.tavily.arn,
       aws_secretsmanager_secret.clerk.arn,
       aws_secretsmanager_secret.sentry.arn,
+      aws_secretsmanager_secret.langsmith.arn,
       aws_secretsmanager_secret.database_url.arn,
     ]
   }

@@ -28,13 +28,16 @@ resource "aws_ecs_task_definition" "backend" {
         { name = "APP_ENV", value = var.app_env },
         { name = "AWS_DEFAULT_REGION", value = var.aws_region },
         { name = "S3_BUCKET_NAME", value = aws_s3_bucket.pdfs.id },
-        { name = "REDIS_URL", value = "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:${tostring(aws_elasticache_cluster.redis.port)}" }
+        { name = "REDIS_URL", value = "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:${tostring(aws_elasticache_cluster.redis.port)}" },
+        { name = "LANGCHAIN_TRACING_V2", value = "true" },
+        { name = "LANGCHAIN_PROJECT", value = "${var.project_name}-${var.environment}" }
       ]
       secrets = [
         { name = "OPENAI_API_KEY", valueFrom = aws_secretsmanager_secret.openai.arn },
         { name = "TAVILY_API_KEY", valueFrom = aws_secretsmanager_secret.tavily.arn },
         { name = "CLERK_SECRET_KEY", valueFrom = aws_secretsmanager_secret.clerk.arn },
         { name = "SENTRY_DSN", valueFrom = aws_secretsmanager_secret.sentry.arn },
+        { name = "LANGCHAIN_API_KEY", valueFrom = aws_secretsmanager_secret.langsmith.arn },
         { name = "DATABASE_URL", valueFrom = aws_secretsmanager_secret.database_url.arn }
       ]
       logConfiguration = {
@@ -76,13 +79,16 @@ resource "aws_ecs_task_definition" "migrations" {
         { name = "APP_ENV", value = var.app_env },
         { name = "AWS_DEFAULT_REGION", value = var.aws_region },
         { name = "S3_BUCKET_NAME", value = aws_s3_bucket.pdfs.id },
-        { name = "REDIS_URL", value = "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:${tostring(aws_elasticache_cluster.redis.port)}" }
+        { name = "REDIS_URL", value = "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:${tostring(aws_elasticache_cluster.redis.port)}" },
+        { name = "LANGCHAIN_TRACING_V2", value = "true" },
+        { name = "LANGCHAIN_PROJECT", value = "${var.project_name}-${var.environment}" }
       ]
       secrets = [
         { name = "OPENAI_API_KEY", valueFrom = aws_secretsmanager_secret.openai.arn },
         { name = "TAVILY_API_KEY", valueFrom = aws_secretsmanager_secret.tavily.arn },
         { name = "CLERK_SECRET_KEY", valueFrom = aws_secretsmanager_secret.clerk.arn },
         { name = "SENTRY_DSN", valueFrom = aws_secretsmanager_secret.sentry.arn },
+        { name = "LANGCHAIN_API_KEY", valueFrom = aws_secretsmanager_secret.langsmith.arn },
         { name = "DATABASE_URL", valueFrom = aws_secretsmanager_secret.database_url.arn }
       ]
       command   = ["/bin/sh", "-c", "cd /app && /app/.venv/bin/alembic upgrade head && echo done"]

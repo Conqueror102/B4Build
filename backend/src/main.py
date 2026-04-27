@@ -17,6 +17,7 @@ from .db.session import dispose_engine, get_engine, init_engine
 from .logging_config import configure_logging, get_logger
 from .services import checkpointing
 from .settings import get_settings
+from .tracing_env import configure_langsmith_env
 
 
 @asynccontextmanager
@@ -24,6 +25,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Run on startup and shutdown."""
     configure_logging()
     settings = get_settings()
+    configure_langsmith_env(settings)
     logger = get_logger(__name__)
 
     dsn = (settings.sentry_dsn or "").strip()

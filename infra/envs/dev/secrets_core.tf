@@ -56,6 +56,19 @@ resource "aws_secretsmanager_secret_version" "sentry" {
   }
 }
 
+resource "aws_secretsmanager_secret" "langsmith" {
+  name                    = "${var.project_name}/${var.environment}/langsmith-api-key"
+  recovery_window_in_days = 0
+}
+
+resource "aws_secretsmanager_secret_version" "langsmith" {
+  secret_id     = aws_secretsmanager_secret.langsmith.id
+  secret_string = "REPLACE_WITH_LANGSMITH_API_KEY"
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+}
+
 resource "aws_secretsmanager_secret" "database_url" {
   name                    = "${var.project_name}/${var.environment}/database-url"
   recovery_window_in_days = 0

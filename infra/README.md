@@ -78,7 +78,8 @@ Your Python app ([`backend/src/settings.py`](../backend/src/settings.py)) reads 
 | `REDIS_URL` | Injected in task definition (Redis cluster address) |
 | `S3_BUCKET_NAME` | Injected (for future PDFs; not yet a `Settings` field — **harmless**, or add to `Settings` if you use it) |
 | `AWS_DEFAULT_REGION` | Region string |
-| `OPENAI_API_KEY`, `TAVILY_API_KEY`, `CLERK_SECRET_KEY`, `SENTRY_DSN`, `DATABASE_URL` | **Secrets Manager** `secrets` → mounted as env vars. `DATABASE_URL` is `postgresql://...`; the app rewrites to `postgresql+asyncpg://` in code. |
+| `LANGCHAIN_TRACING_V2`, `LANGCHAIN_PROJECT` | Plain env on the task (`true` and `{project}-{env}`, e.g. `b4build-dev`) for LangSmith |
+| `OPENAI_API_KEY`, `TAVILY_API_KEY`, `CLERK_SECRET_KEY`, `SENTRY_DSN`, `LANGCHAIN_API_KEY`, `DATABASE_URL` | **Secrets Manager** `secrets` → mounted as env vars. `DATABASE_URL` is `postgresql://...`; the app rewrites to `postgresql+asyncpg://` in code. LangSmith API key lives in `langsmith-api-key`. |
 
 Locally, use a **`backend/.env`** (or project `.env` per `Settings`) with the same variable names. For the **Next.js** app, use variables prefixed with `NEXT_PUBLIC_*` only for values that are safe in the browser (e.g. Clerk publishable key, public API base URL) — not secret keys.
 
@@ -95,7 +96,7 @@ Outputs: `amplify_app_id`, `amplify_default_domain`.
 ## After apply
 
 - Push a backend image to ECR (`:latest` and/or CI tag).
-- Replace **placeholder** secret values in Secrets Manager (`openai`, `tavily`, `clerk`, `sentry`)—Terraform created versions with `REPLACE_...` and `lifecycle ignore_changes` on values.
+- Replace **placeholder** secret values in Secrets Manager (`openai`, `tavily`, `clerk`, `sentry`, `langsmith-api-key`)—Terraform created versions with `REPLACE_...` and `lifecycle ignore_changes` on values.
 - Run **migrations** with `aws ecs run-task` (see `envs/dev` outputs: `migrations_run_command` / subnets).
 - **Frontend:** push code (including root [`amplify.yml`](../amplify.yml)), then in Amplify **connect the branch** and wait for a green build. Set `NEXT_PUBLIC_API_URL` to `https` when the API uses HTTPS.
 

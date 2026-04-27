@@ -32,6 +32,7 @@ from tenacity import (
 
 from ..logging_config import get_logger
 from ..settings import get_settings
+from ..tracing_env import langsmith_tracing_active
 from .pricing import estimate_cost_usd
 
 logger = get_logger(__name__)
@@ -78,8 +79,17 @@ class LLMClient:
         timeout_seconds: float,
         max_retries: int,
         per_request_cost_cap_usd: float,
+        *,
+        langsmith_wrap: bool = False,
+        langsmith_project: str = "ai-build-advisor-dev",
     ) -> None:
-        self._client = AsyncOpenAI(api_key=api_key, timeout=timeout_seconds)
+        raw = AsyncOpenAI(api_key=api_key, timeout=timeout_seconds)
+        if langsmith_wrap:
+            from langsmith.wrappers import wrap_openai
+
+            self._client = wrap_openai(raw, project_name=langsmith_project)
+        else:
+            self._client = raw
         self.default_model = default_model
         self.timeout_seconds = timeout_seconds
         self.max_retries = max_retries
@@ -316,10 +326,14 @@ class LLMClient:
 def get_llm_client() -> LLMClient:
     """Singleton accessor for LLMClient."""
     settings = get_settings()
+    wrap_ls = langsmith_tracing_active(settings)
+    proj = (settings.langchain_project or "ai-build-advisor-dev").strip()
     return LLMClient(
         api_key=settings.openai_api_key,
         default_model=settings.openai_default_model,
         timeout_seconds=settings.llm_default_timeout_seconds,
         max_retries=settings.llm_max_retries,
         per_request_cost_cap_usd=settings.per_request_cost_cap,
+        langsmith_wrap=wrap_ls,
+        langsmith_project=proj or "ai-build-advisor-dev",
     )

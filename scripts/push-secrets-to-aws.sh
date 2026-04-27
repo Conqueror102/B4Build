@@ -74,6 +74,7 @@ load_env_file() {
       TAVILY_API_KEY)  TAVILY_API_KEY="$val" ;;
       CLERK_SECRET_KEY) CLERK_SECRET_KEY="$val" ;;
       SENTRY_DSN)      SENTRY_DSN="$val" ;;
+      LANGCHAIN_API_KEY) LANGCHAIN_API_KEY="$val" ;;
       DATABASE_URL)    DATABASE_URL="$val" ;;
     esac
   done < "$f"
@@ -120,6 +121,7 @@ put_secret "$B4BUILD_PROJECT/$B4BUILD_ENV/openai-api-key" "${OPENAI_API_KEY-}"
 put_secret "$B4BUILD_PROJECT/$B4BUILD_ENV/tavily-api-key" "${TAVILY_API_KEY-}"
 put_secret "$B4BUILD_PROJECT/$B4BUILD_ENV/clerk-secret-key" "${CLERK_SECRET_KEY-}"
 put_secret "$B4BUILD_PROJECT/$B4BUILD_ENV/sentry-dsn" "${SENTRY_DSN-}"
+put_secret "$B4BUILD_PROJECT/$B4BUILD_ENV/langsmith-api-key" "${LANGCHAIN_API_KEY-}"
 
 if [[ "$INCLUDE_DB_URL" -eq 1 ]]; then
   put_secret "$B4BUILD_PROJECT/$B4BUILD_ENV/database-url" "${DATABASE_URL-}"

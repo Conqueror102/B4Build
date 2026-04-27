@@ -116,7 +116,9 @@ $0/M.
 ### `src/llm/client.py` - the chokepoint
 
 `LLMClient` is a thin async wrapper around `AsyncOpenAI` with two public
-methods:
+methods. When **`LANGCHAIN_TRACING_V2`** and **`LANGCHAIN_API_KEY`** are set in
+settings (see `tracing_env.py` startup), the client is wrapped with LangSmith’s
+`wrap_openai` so completions appear as traces; otherwise the raw OpenAI client is used. The two public entry points are:
 
 - `complete(messages, ...)` - free-form completion (mostly used by the
   coordinator when it needs to ask clarifying questions).

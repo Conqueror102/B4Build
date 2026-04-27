@@ -269,9 +269,10 @@ Save **`alb_http_url`**: the frontend will call this until you have HTTPS and a 
 **Why:** The app will not call OpenAI, Clerk, etc. until the values in **Secrets Manager** are real.
 
 1. AWS **Console** → **Secrets Manager** (region = your `dev` region, e.g. `us-east-1`).  
-2. Find the secrets for `openai`, `tavily`, `clerk`, `sentry` (names use your `project`/`env` from Terraform).  
-3. For each, **put a new value** (plain string for `DATABASE_URL` only if you really must override; normally Terraform already wires RDS).  
-4. In **ECS** → your service → **update** or run **`deploy-backend`** on GitHub so new tasks start (they read the latest secret version).
+2. Find the secrets for `openai`, `tavily`, `clerk`, `sentry`, and **`langsmith-api-key`** (paths are `${project}/${env}/...` from Terraform).  
+3. For each, **put a new value** (plain string for `DATABASE_URL` only if you really must override; normally Terraform already wires RDS). **LangSmith:** paste your LangSmith API key (`lsv2_...`) into `langsmith-api-key`. The ECS task definition sets **`LANGCHAIN_TRACING_V2=true`** and **`LANGCHAIN_PROJECT`** to `{project}-{env}` (e.g. `b4build-dev`).  
+4. Locally, copy [`.env.example`](../.env.example) to `.env` and set **`LANGCHAIN_*`** if you want traces during development; use `./scripts/push-secrets-to-aws.sh` to sync **`LANGCHAIN_API_KEY`** to the same secret name as in AWS.  
+5. In **ECS** → your service → **update** or run **`deploy-backend`** on GitHub so new tasks start (they read the latest secret version).
 
 ---
 
