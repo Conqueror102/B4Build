@@ -34,6 +34,8 @@ async def init_checkpointer(
         return
 
     conninfo = to_psycopg_conninfo(database_url)
+    
+    # Connection pool configuration
     pool = AsyncConnectionPool(
         conninfo=conninfo,
         min_size=min_size,
@@ -48,6 +50,9 @@ async def init_checkpointer(
     
     # LangGraph setup() often runs migrations with CREATE INDEX CONCURRENTLY,
     # which cannot run inside a transaction. We use a one-off autocommit connection for this.
+    # 
+    # RDS compatibility: conninfo already includes sslmode in the connection string (e.g., ?sslmode=require).
+    # psycopg3 accepts SSL parameters in the conninfo string (libpq format), not as keyword arguments.
     async with await psycopg.AsyncConnection.connect(conninfo, autocommit=True) as setup_conn:
         setup_cp = AsyncPostgresSaver(setup_conn)
         await setup_cp.setup()
