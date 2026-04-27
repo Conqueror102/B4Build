@@ -1,26 +1,41 @@
 "use client";
 
+import Link from "next/link";
 import { ReportPanel } from "@/components/plan/report-panel";
 import type { FullPlan } from "@/lib/types";
 import type { PhaseState } from "@/hooks/use-plan-stream";
 
 // MOCK DATA for the Sample Page (shape is illustrative; cast for strict FullPlan typing)
 const mockPlan = {
-  id: "sample-plan-123",
-  title: "AI Legal Contract Reviewer",
-  idea_summary: "A B2B SaaS that allows law firms to upload PDF contracts. The system uses an LLM to find risky clauses, missing standard terms, and provides a redlined summary. Targeting 500 law firms.",
+  plan_id: "sample-plan-123",
+  idea: "A B2B SaaS that allows law firms to upload PDF contracts. The system uses an LLM to find risky clauses, missing standard terms, and provides a redlined summary. Targeting 500 law firms.",
+  created_at: "2024-01-15T10:00:00Z",
   total_cost_usd: 125.5,
   pressure_test: {
-    status: "pass",
-    feedback: "Clear B2B use case with defined audience. The problem is well-suited for LLMs, specifically using RAG over the contract text.",
-    adjusted_constraints: ["Must handle large PDFs securely", "Requires high-accuracy extraction", "Must retain formatting"],
+    is_viable: true,
+    refusal_reason: null,
+    summary: "Clear B2B use case with defined audience. The problem is well-suited for LLMs, specifically using RAG over the contract text.",
+    similar_existing_solutions: ["LawGeex", "Kira Systems"],
+    differentiators: ["Focus on SMB law firms", "Simpler UX"],
+    risks: ["Accuracy requirements", "Data privacy"],
   },
   problem_model_fit: {
-    recommended_model: "claude-3-opus",
-    reasoning: "Claude 3 Opus excels at long-context document analysis and precise extraction over complex legal language.",
-    alternatives_considered: ["gpt-4-turbo"],
+    problem_type: "extraction" as const,
+    why_llm: "Claude 3 Opus excels at long-context document analysis and precise extraction over complex legal language.",
+    deterministic_alternative: "Rule-based NER systems",
+    success_criteria: ["90% accuracy on test contracts", "Under 30s processing time"],
+    failure_modes: ["Hallucinated clauses", "Missed edge cases"],
   },
   architecture: {
+    pattern: "rag" as const,
+    scope_definition: {
+      problem_why: "Law firms need to review contracts faster",
+      personas_and_roles: ["Legal associate", "Partner"],
+      mvp_definition: ["Upload PDF", "Get risk analysis", "Export redline"],
+      success_in_3_months: ["5 firms using it", "80% accuracy on test set"],
+    },
+    feature_modules: [],
+    system_architecture: [],
     components: [
       { name: "Frontend", technology: "Next.js + Tailwind", purpose: "Upload interface and redline viewer" },
       { name: "API Gateway", technology: "FastAPI", purpose: "Handle async PDF processing jobs" },
@@ -29,6 +44,42 @@ const mockPlan = {
       { name: "LLM Orchestration", technology: "LangChain", purpose: "Manage prompts and RAG pipeline" },
     ],
     data_flow: "User -> Frontend -> FastAPI -> S3 -> LangChain -> Pinecone -> Claude 3 Opus -> FastAPI -> User",
+    notable_tradeoffs: [],
+    data_model: [],
+    api_design: {
+      style: "REST",
+      auth_strategy: "JWT",
+      error_model: "RFC 7807",
+      rate_limiting: "Per-tenant",
+      endpoints: [],
+    },
+    ui_ux_approach: {
+      key_screens: ["Upload", "Review", "Export"],
+      component_tree_notes: "Standard SaaS layout",
+      design_system_notes: "Tailwind + shadcn/ui",
+      mobile_strategy: "Responsive web",
+    },
+    security_design: {
+      roles_and_permissions: ["Admin", "User"],
+      pii_handling: "Encrypted at rest",
+      prompt_injection_controls: ["Input validation"],
+      secrets_and_keys: ["AWS Secrets Manager"],
+      security_basics: ["HTTPS", "CORS"],
+    },
+    deployment_plan: {
+      environments: ["dev", "prod"],
+      hosting: "AWS",
+      ci_cd: "GitHub Actions",
+      observability: "Datadog",
+      cost_notes: "Pay as you go",
+    },
+    build_phases: [],
+    risk_analysis: [],
+    mermaid_system_architecture: "flowchart TB\nU[User] --> F[Frontend]\nF --> API[FastAPI]\nAPI --> S3[S3]\nAPI --> P[Pinecone]\nAPI --> C[Claude]",
+    mermaid_request_data_flow: "sequenceDiagram\nUser->>Frontend: Upload PDF\nFrontend->>API: POST /analyze\nAPI->>S3: Store PDF\nAPI->>Claude: Analyze\nClaude->>API: Results\nAPI->>Frontend: Redline",
+    mermaid_erd: "",
+    mermaid_deployment: "",
+    mermaid_ui_component_tree: "",
   },
   build_buy_train: {
     search_context: {
@@ -115,23 +166,54 @@ const mockPlan = {
   },
   security: {
     threats: ["Data leakage of sensitive contracts", "Prompt injection to manipulate output", "Tenant data mixing"],
-    mitigations: ["S3 SSE-KMS encryption per tenant", "Strict LLM output parsing", "Row-level security in Postgres"],
+    pii_handling: "S3 SSE-KMS encryption per tenant",
+    prompt_injection_mitigations: ["Strict LLM output parsing", "Input validation"],
+    rate_limiting: "Per-tenant quotas",
+    auth_strategy: "JWT with Clerk",
+    compliance_notes: ["SOC2 Type II", "GDPR compliant"],
   },
   observability: {
     metrics: ["PDF processing latency", "LLM token usage per tenant", "Extraction accuracy (thumbs up/down)"],
-    tools: ["Datadog", "LangSmith", "Sentry"],
+    tracing_tool: "LangSmith",
+    log_sink: "Datadog",
+    eval_strategy: "Human review + automated tests",
+    alerting: ["Error rate > 5%", "Latency > 60s"],
   },
   scaling: {
-    bottlenecks: ["LLM API rate limits", "Concurrent PDF OCR processing"],
-    solutions: ["Implement async queueing (Celery/Redis)", "Request quota increases from Anthropic"],
+    bottlenecks_at_10x: ["LLM API rate limits", "Concurrent PDF OCR processing"],
+    bottlenecks_at_100x: ["Database connections", "S3 request limits"],
+    caching_strategy: "Redis for repeated clause analysis",
+    failover_strategy: "Multi-region deployment",
+    cost_at_scale_concerns: ["Token costs grow linearly", "Storage costs for PDFs"],
   },
   red_team: {
-    severity: "medium",
-    critique: "The architecture relies too heavily on Claude 3 Opus for all tasks. Opus is slow and expensive. You should use a cheaper model (like Haiku) for initial triaging and chunking, and only use Opus for the final complex reasoning. Additionally, law firms have strict data residency requirements (e.g., SOC2, GDPR). Ensure Anthropic has a zero-retention agreement.",
-    unhandled_risks: ["Data residency compliance", "High latency for 100+ page contracts"],
-    recommendations: ["Implement a multi-model router (Haiku for simple extraction, Opus for complex)", "Add a 'processing' state in the UI via WebSockets"],
+    overall_confidence: "medium",
+    summary:
+      "The architecture relies too heavily on Claude 3 Opus for all tasks. Opus is slow and expensive. Prefer a cheaper model for triage and reserve Opus for complex reasoning. Law firms need SOC2/GDPR alignment and clear data residency with Anthropic.",
+    findings: [
+      {
+        severity: "high",
+        phase_id: "P2",
+        concern:
+          "Using Opus for every contract pass will blow cost and latency at scale.",
+        suggested_mitigation:
+          "Multi-model routing: Haiku/BM25 triage → Opus only when complex reasoning is required.",
+      },
+      {
+        severity: "medium",
+        phase_id: "P4",
+        concern: "Sensitive PDFs must meet residency and retention policies per tenant.",
+        suggested_mitigation:
+          "Zero-retention APIs where possible, tenant-isolated buckets, documented DPA.",
+      },
+    ],
   },
   executive_summary: "The AI Legal Contract Reviewer is a viable B2B SaaS. The architecture leverages managed services to reduce operational overhead, but the primary risk is the unit economics of using frontier models on large documents. Implementing a multi-model strategy and async processing queues will be critical for scaling.",
+  next_steps: [
+    "Pilot with one firm and measure cost per reviewed page",
+    "Add async PDF pipeline and queue depth metrics before scaling seats",
+    "Formalize security review with counsel for retention and residency",
+  ],
 } as unknown as FullPlan;
 
 const mockPhases: Record<string, PhaseState> = {

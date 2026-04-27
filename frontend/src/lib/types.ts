@@ -378,13 +378,14 @@ export interface SseInit {
 
 export interface SsePhaseStart {
   event: "phase_start";
-  phase_id: string;
+  /** Set on SSE root by backend; parser may pass null (see `sse.ts`). */
+  phase_id: string | null;
   data: { title: string };
 }
 
 export interface SsePhaseComplete {
   event: "phase_complete";
-  phase_id: string;
+  phase_id: string | null;
   data: { title: string; output: unknown };
 }
 

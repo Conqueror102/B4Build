@@ -39,7 +39,7 @@ function mermaidFromComponents(components: ArchitectureComponent[] | undefined):
 export function ArchitectureDiagram({ data }: { data: Architecture }) {
   const blocks = MERMAID_BLOCKS.map(({ key, title }) => ({
     title,
-    code: (data as Record<string, string | undefined>)[key] ?? "",
+    code: data[key] ?? "",
   })).filter((b) => b.code.trim().length > 0);
 
   if (blocks.length > 0) {

@@ -289,9 +289,8 @@ export function usePlanStream(initialPlanId?: string | null) {
         break;
 
       case "phase_start": {
-        const pid = normalizePhaseId(
-          event.phase_id ?? event.data.phase_id,
-        );
+        // phase_id is on the SSE root (see api chat._sse), not in data
+        const pid = normalizePhaseId(event.phase_id);
         if (!pid) break;
         setState((prev) => ({
           ...prev,
@@ -318,9 +317,7 @@ export function usePlanStream(initialPlanId?: string | null) {
       }
 
       case "phase_complete": {
-        const pid = normalizePhaseId(
-          event.phase_id ?? event.data.phase_id,
-        );
+        const pid = normalizePhaseId(event.phase_id);
         if (!pid) break;
         setState((prev) => ({
           ...prev,

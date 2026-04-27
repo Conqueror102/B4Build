@@ -566,8 +566,8 @@ function isListPhase4Infrastructure(data: unknown): data is Infrastructure & {
   if (!Array.isArray(m) || !Array.isArray(p) || m.length === 0 || p.length === 0) {
     return false;
   }
-  const m0 = m[0] as Record<string, unknown>;
-  return typeof m0?.name === "string" && typeof m0?.details === "string";
+  const m0 = m[0] as InfraLayer;
+  return typeof m0.name === "string" && typeof m0.details === "string";
 }
 
 function isDeepObjectPhase4Infrastructure(data: unknown): data is DeepInfra {

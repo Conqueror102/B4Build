@@ -99,12 +99,14 @@ function MessageBubble({ message }: { message: ChatMessage }) {
                 ul: (props) => <ul {...props} />,
                 ol: (props) => <ol {...props} />,
                 // Customize code blocks
-                code: ({ inline, className: _c, children, ...props }) =>
-                  inline ? (
-                    <code {...props}>{children}</code>
+                code: (props: any) => {
+                  const { inline, className: _c, children, ...rest } = props;
+                  return inline ? (
+                    <code {...rest}>{children}</code>
                   ) : (
-                    <code className="block overflow-x-auto" {...props}>{children}</code>
-                  ),
+                    <code className="block overflow-x-auto" {...rest}>{children}</code>
+                  );
+                },
                 // Customize links
                 a: (props) => (
                   <a className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors" target="_blank" rel="noopener noreferrer" {...props} />
