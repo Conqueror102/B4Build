@@ -9,10 +9,12 @@ frontend:
         - nvm use 20 || true
         - corepack enable
         - corepack prepare pnpm@9.15.9 --activate
-        - cd frontend && pnpm install --frozen-lockfile
+        - cd frontend
+        - pnpm install --frozen-lockfile
     build:
       commands:
-        - cd frontend && pnpm run build
+        - cd frontend
+        - pnpm run build
   artifacts:
     baseDirectory: frontend/.next
     files:
