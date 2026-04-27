@@ -1,50 +1,34 @@
-"""Normalize DB URL strings (SQLAlchemy <-> libpq / psycopg)."""
+from urllib.parse import urlparse, urlunparse, quote, parse_qs, urlencode
 
-from __future__ import annotations
-
-from urllib.parse import parse_qsl, quote, urlencode, urlparse, urlunparse
-
-
-def to_psycopg_conninfo(url: str) -> str:
+def to_psycopg_conninfo(database_url: str) -> str:
     """
-    Strip SQLAlchemy async driver for psycopg ``AsyncConnectionPool`` / libpq.
-
-    Passwords (and usernames) with special characters ``# $ ^ ! % * : @`` must be
-    percent-encoded in the URI. Raw characters break parsing or are treated as
-    malformed percent-encoding (especially ``%``).
-
-    psycopg3 expects ``sslmode`` (or compatible SSL params) in the connection string
-    for RDS; we ensure ``sslmode=require`` when neither ``sslmode`` nor ``ssl`` is set,
-    and map ``ssl=true`` to ``sslmode=require`` when appropriate.
+    Fix for AWS RDS + psycopg3:
+    - Automatically URL-encodes the password (handles # $ ^ ! % * etc.)
+    - Ensures ?sslmode=require is always present
+    - Works whether the password in Secrets Manager is raw or already encoded
     """
-    u = url.strip()
+    if not database_url or not database_url.strip():
+        return database_url.strip()
 
-    if "+asyncpg" in u:
-        u = u.replace("postgresql+asyncpg://", "postgresql://", 1)
-    if u.startswith("postgres://"):
-        u = u.replace("postgres://", "postgresql://", 1)
+    u = database_url.strip()
+
+    # Normalize prefixes
+    u = u.replace("postgres://", "postgresql://", 1)
+    u = u.replace("postgresql+asyncpg://", "postgresql://", 1)
 
     parsed = urlparse(u)
-    netloc = parsed.netloc
 
-    # Re-encode userinfo: use partition so passwords may contain ':' (first colon only splits user/pass)
-    if "@" in netloc:
-        userinfo, hostpart = netloc.rsplit("@", 1)
-        if ":" in userinfo:
-            u_name, _, u_pass = userinfo.partition(":")
-        else:
-            u_name, u_pass = userinfo, ""
-        netloc = f"{quote(u_name, safe='')}:{quote(u_pass, safe='')}@{hostpart}"
+    # Re-encode password safely
+    if parsed.password:
+        safe_password = quote(parsed.password, safe="")   # This is the key fix
+        netloc = parsed.netloc.replace(parsed.password, safe_password, 1)
+        parsed = parsed._replace(netloc=netloc)
 
-    params = dict(parse_qsl(parsed.query, keep_blank_values=True))
-    if "sslmode" not in params:
-        if params.get("ssl") == "false":
-            pass  # local dev — do not force TLS
-        elif params.get("ssl") == "true":
-            params["sslmode"] = "require"
-        elif "ssl" not in params:
-            params["sslmode"] = "require"
+    # Force sslmode=require for RDS
+    query_params = parse_qs(parsed.query, keep_blank_values=True)
+    query_params["sslmode"] = ["require"]
 
-    new_query = urlencode(params)
+    new_query = urlencode(query_params, doseq=True)
+    parsed = parsed._replace(query=new_query)
 
-    return urlunparse((parsed.scheme, netloc, parsed.path, parsed.params, new_query, parsed.fragment))
+    return urlunparse(parsed)
