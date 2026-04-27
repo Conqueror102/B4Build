@@ -152,8 +152,15 @@ A person opens your **Amplify** site, which was built from your **GitHub** repo.
 
 ---
 
+## LangGraph and the nine phases (detailed)
+
+For **breakdown diagrams** of LangGraph nodes, routing, and the fixed phase order (P0–P7, red team, synthesizer), see **[`LANGGRAPH_AND_PHASES_EXPLAINED.md`](LANGGRAPH_AND_PHASES_EXPLAINED.md)**.
+
+---
+
 ## Related reading
 
 - Cloud-focused overview: [`INFRASTRUCTURE_EXPLAINED.md`](INFRASTRUCTURE_EXPLAINED.md)
+- **LangGraph topology + phase table + conveyor-belt diagram:** [`LANGGRAPH_AND_PHASES_EXPLAINED.md`](LANGGRAPH_AND_PHASES_EXPLAINED.md)
 - Backend details for developers: [`../backend/ARCHITECTURE.md`](../backend/ARCHITECTURE.md)
 - Bring-up steps: [`SETUP_GUIDE.md`](SETUP_GUIDE.md)
