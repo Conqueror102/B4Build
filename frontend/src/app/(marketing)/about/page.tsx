@@ -31,7 +31,7 @@ export default function AboutPage() {
         </p>
         
         <p>
-          What I needed was a ruthless, experienced Staff Engineer sitting next to me—someone who would ask annoying questions like: <em>"Why are you using a graph database for this?"</em> and <em>"What happens when the LLM hallucinates a SQL injection?"</em>
+          What I needed was a ruthless, experienced Staff Engineer sitting next to me—someone who would ask annoying questions like: <em>&ldquo;Why are you using a graph database for this?&rdquo;</em> and <em>&ldquo;What happens when the LLM hallucinates a SQL injection?&rdquo;</em>
         </p>
 
         <h2>Enter the Agentic Workflow</h2>
