@@ -47,6 +47,14 @@ class Settings(BaseSettings):
         description="Async SQLAlchemy URL (Phase 3+)",
     )
 
+    rds_ca_bundle_path: str = Field(
+        default="/app/rds-global-bundle.pem",
+        description=(
+            "Path to AWS RDS combined CA PEM (Dockerfile downloads this for ECS). "
+            "If the file is missing, TLS still uses ssl=True without custom CA."
+        ),
+    )
+
     redis_url: str = Field(
         default="redis://localhost:6379/0",
         description="Redis URL (Phase 5+)",

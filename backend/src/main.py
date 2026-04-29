@@ -41,7 +41,8 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         )
         logger.info("sentry.initialized", env=settings.app_env)
 
-    init_engine(settings.database_url)
+    ca = (settings.rds_ca_bundle_path or "").strip()
+    init_engine(settings.database_url, rds_ca_bundle_path=ca or None)
     url = settings.database_url
     if "sqlite" in url:
         await create_all_sqlite_schema(models.Base, get_engine())

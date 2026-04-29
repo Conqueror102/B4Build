@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import ssl
 from typing import Any
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
@@ -81,3 +83,27 @@ def normalize_database_url_for_async_engine(database_url: str) -> tuple[str, dic
         connect_args["ssl"] = True
 
     return clean, connect_args
+
+
+def merge_postgres_ssl_with_rds_ca_bundle(
+    connect_args: dict[str, Any],
+    ca_bundle_path: str | None,
+) -> dict[str, Any]:
+    """Replace ``ssl=True`` with an :class:`ssl.SSLContext` when an RDS CA file is present.
+
+    ``ssl=True`` uses the process default trust store; RDS often needs Amazon's bundle or
+    verification fails with "self-signed certificate in certificate chain". If the path is
+    missing (e.g. local dev), keep ``ssl=True``.
+    """
+    if not connect_args or connect_args.get("ssl") is not True:
+        return connect_args
+    path = (ca_bundle_path or "").strip()
+    if not path or not os.path.isfile(path):
+        return connect_args
+    try:
+        ctx = ssl.create_default_context(cafile=path)
+    except OSError:
+        return connect_args
+    merged = dict(connect_args)
+    merged["ssl"] = ctx
+    return merged

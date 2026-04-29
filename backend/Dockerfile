@@ -16,12 +16,11 @@ COPY . .
 # Production stage
 FROM python:3.12-slim-bookworm
 
-# Install curl for health checks
+# curl: health checks + downloading RDS CA bundle for asyncpg TLS verification
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl && \
+    apt-get install -y --no-install-recommends curl ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /app
 
 # Copy virtual environment from builder
@@ -29,6 +28,11 @@ COPY --from=builder /app/.venv /app/.venv
 
 # Copy application code
 COPY --from=builder /app /app
+
+# After COPY: RDS CA bundle (not in repo; needed for asyncpg TLS verify against RDS)
+RUN curl -fsSL -o /app/rds-global-bundle.pem \
+    https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem && \
+    chmod 644 /app/rds-global-bundle.pem
 
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH" \

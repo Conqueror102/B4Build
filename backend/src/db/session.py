@@ -13,7 +13,10 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from ..database_url import normalize_database_url_for_async_engine
+from ..database_url import (
+    merge_postgres_ssl_with_rds_ca_bundle,
+    normalize_database_url_for_async_engine,
+)
 from ..logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -22,15 +25,17 @@ _engine: AsyncEngine | None = None
 _session_factory: async_sessionmaker[AsyncSession] | None = None
 
 
-def init_engine(database_url: str) -> None:
+def init_engine(database_url: str, *, rds_ca_bundle_path: str | None = None) -> None:
     """Initialize the global async engine and session factory.
 
     Normalizes PostgreSQL URLs for the asyncpg driver and RDS TLS without relying on
-    fragile regex over the connection string.
+    fragile regex over the connection string. When ``rds_ca_bundle_path`` points at the
+    AWS RDS CA bundle, asyncpg verifies the server chain (required for RDS on ECS).
     """
     global _engine, _session_factory
 
     url, connect_args = normalize_database_url_for_async_engine(database_url)
+    connect_args = merge_postgres_ssl_with_rds_ca_bundle(connect_args, rds_ca_bundle_path)
     is_sqlite = url.startswith("sqlite")
 
     if is_sqlite:
