@@ -38,6 +38,11 @@ class Settings(BaseSettings):
 
     tavily_api_key: str = Field(default="", description="Tavily web search API key")
 
+    github_token: str = Field(
+        default="",
+        description="GitHub PAT for repository search (Phase 3). Improves rate limits vs unauthenticated API.",
+    )
+
     langchain_tracing_v2: bool = False
     langchain_api_key: str = ""
     langchain_project: str = "ai-build-advisor-dev"

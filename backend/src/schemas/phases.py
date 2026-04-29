@@ -24,7 +24,9 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from .mermaid_sanitize import strip_mermaid_fences
 
 
 class PressureTestResult(BaseModel):
@@ -207,6 +209,20 @@ class Architecture(BaseModel):
     mermaid_deployment: str
     mermaid_ui_component_tree: str
 
+    @field_validator(
+        "mermaid_system_architecture",
+        "mermaid_request_data_flow",
+        "mermaid_erd",
+        "mermaid_deployment",
+        "mermaid_ui_component_tree",
+        mode="before",
+    )
+    @classmethod
+    def _strip_mermaid_fences(cls, v: object) -> object:
+        if isinstance(v, str):
+            return strip_mermaid_fences(v)
+        return v
+
 
 class OpenSourceRepo(BaseModel):
     """An open-source repository recommendation."""
@@ -332,6 +348,18 @@ class Infrastructure(BaseModel):
         description="3-7 short bullets for exec scan (hosting, inference, cost posture, etc.)",
         max_length=12,
     )
+
+    @field_validator(
+        "mermaid_mvp_stack",
+        "mermaid_production_stack",
+        "mermaid_mvp_to_production",
+        mode="before",
+    )
+    @classmethod
+    def _strip_infra_mermaid(cls, v: object) -> object:
+        if isinstance(v, str):
+            return strip_mermaid_fences(v)
+        return v
 
 
 def normalize_infrastructure_payload(raw: dict[str, Any]) -> dict[str, Any]:

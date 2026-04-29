@@ -81,13 +81,14 @@ class LLMClient:
         per_request_cost_cap_usd: float,
         *,
         langsmith_wrap: bool = False,
-        langsmith_project: str = "ai-build-advisor-dev",
     ) -> None:
         raw = AsyncOpenAI(api_key=api_key, timeout=timeout_seconds)
         if langsmith_wrap:
             from langsmith.wrappers import wrap_openai
 
-            self._client = wrap_openai(raw, project_name=langsmith_project)
+            # Project/tags come from LANGCHAIN_PROJECT / env (see tracing_env.configure_langsmith_env).
+            # langsmith removed wrap_openai(..., project_name=...); passing it raises TypeError.
+            self._client = wrap_openai(raw)
         else:
             self._client = raw
         self.default_model = default_model
@@ -327,7 +328,6 @@ def get_llm_client() -> LLMClient:
     """Singleton accessor for LLMClient."""
     settings = get_settings()
     wrap_ls = langsmith_tracing_active(settings)
-    proj = (settings.langchain_project or "ai-build-advisor-dev").strip()
     return LLMClient(
         api_key=settings.openai_api_key,
         default_model=settings.openai_default_model,
@@ -335,5 +335,4 @@ def get_llm_client() -> LLMClient:
         max_retries=settings.llm_max_retries,
         per_request_cost_cap_usd=settings.per_request_cost_cap,
         langsmith_wrap=wrap_ls,
-        langsmith_project=proj or "ai-build-advisor-dev",
     )

@@ -9,6 +9,28 @@ uv sync
 cp ../.env.example ../.env  # then fill in OPENAI_API_KEY etc.
 ```
 
+### WSL + `JSONDecodeError` / broken `requests.compat`
+
+That error means **`requests/compat.py` is truncated or wrong** (middle of the file replaced with empty `pass` blocks). It happens when the **`requests` wheel was extracted badly** — often from **`/mnt/c/`** installs, but **also if uv’s download cache has a bad copy**.
+
+Do this **once** from `backend/` (same shell for all exports):
+
+```bash
+export UV_LINK_MODE=copy
+export UV_PROJECT_ENVIRONMENT="$HOME/.venvs/ai-build-advisor-backend"
+
+uv cache clean
+rm -rf .venv "$UV_PROJECT_ENVIRONMENT"
+
+uv sync
+uv pip install --force-reinstall --no-cache "requests==2.33.1"
+
+uv run python -c "from requests.compat import JSONDecodeError; print('ok')"
+uv run uvicorn src.main:app --reload --host localhost --port 8000
+```
+
+Keep `UV_PROJECT_ENVIRONMENT` (and optionally `UV_LINK_MODE`) whenever you use `uv` here, or set them in [direnv](https://direnv.net/) `.envrc`.
+
 ## Run
 
 ```bash

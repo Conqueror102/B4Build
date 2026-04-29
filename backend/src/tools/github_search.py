@@ -9,8 +9,18 @@ import httpx
 from pydantic import BaseModel, Field
 
 from ..logging_config import get_logger
+from ..settings import get_settings
 
 logger = get_logger(__name__)
+
+
+def _resolve_github_token() -> str | None:
+    """Prefer Settings (loads ``GITHUB_TOKEN`` from ``.env``); fall back to raw ``os.environ``."""
+    t = (get_settings().github_token or "").strip()
+    if t:
+        return t
+    legacy = (os.getenv("GITHUB_TOKEN") or "").strip()
+    return legacy or None
 
 
 class GitHubRepo(BaseModel):
@@ -68,8 +78,7 @@ async def search_github_repos(
         "per_page": max_results,
     }
 
-    # Get GitHub token from environment (optional but recommended)
-    github_token = os.getenv("GITHUB_TOKEN")
+    github_token = _resolve_github_token()
     headers = {
         "Accept": "application/vnd.github.v3+json",
         "User-Agent": "AI-Build-Advisor",
