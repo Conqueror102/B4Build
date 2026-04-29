@@ -25,17 +25,33 @@ def init_engine(database_url: str) -> None:
 
     Normalizes ``postgresql://`` URLs to use the asyncpg driver, and skips
     pool sizing for SQLite (which uses a single-connection pool).
+    
+    For AWS RDS: Handles sslmode parameter correctly for asyncpg driver.
     """
     global _engine, _session_factory
 
     url = database_url
+    
+    # Normalize to use asyncpg driver
     if url.startswith("postgresql://"):
         url = "postgresql+asyncpg://" + url[len("postgresql://") :]
-
+    
+    # Remove sslmode from query string (asyncpg doesn't support it)
+    # Instead, use ssl=true which asyncpg understands
+    if "?sslmode=" in url or "&sslmode=" in url:
+        # Remove sslmode parameter
+        import re
+        url = re.sub(r'[?&]sslmode=[^&]*', '', url)
+        # Add ssl=true if not already present
+        if "ssl=" not in url.lower():
+            url = f"{url}{'&' if '?' in url else '?'}ssl=true"
+    
     is_sqlite = url.startswith("sqlite")
+    
+    # Ensure SSL is enabled for PostgreSQL if not already specified
     if not is_sqlite and "postgresql" in url:
         u = url.lower()
-        if "ssl=" not in u and "sslmode" not in u:
+        if "ssl=" not in u:
             url = f"{url}{'&' if '?' in url else '?'}ssl=true"
 
     if is_sqlite:
