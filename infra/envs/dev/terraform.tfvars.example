@@ -18,3 +18,12 @@ ecr_repository_name = "b4build/backend"
 # Amplify: created by default. Git: connect in AWS console when the repo exists (no token in Terraform).
 # create_amplify_app = true
 # next_public_clerk_publishable_key = "pk_test_..."
+
+# CloudFront in front of the ALB (free *.cloudfront.net cert, no domain required).
+# Leave create_cloudfront = true so NEXT_PUBLIC_API_URL is https and the browser doesn't block calls.
+# create_cloudfront = true
+
+# CORS: list the page origins the API should accept. Must include the Amplify URL the
+# browser actually loads from. Add a custom domain here later if you point one at Amplify.
+# Must match the browser Origin exactly (scheme + host + port, no path, no trailing slash).
+# cors_allow_origins = ["https://main.d39uw5f675st59.amplifyapp.com"]

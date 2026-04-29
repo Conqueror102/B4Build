@@ -12,8 +12,18 @@ output "alb_http_url" {
 }
 
 output "alb_dns_name" {
-  description = "Set NEXT_PUBLIC_API_URL to this (or https if you enable the 443 listener)."
+  description = "Set NEXT_PUBLIC_API_URL to this only if not using CloudFront and not on HTTPS."
   value       = aws_lb.main.dns_name
+}
+
+output "cloudfront_url" {
+  description = "HTTPS URL fronting the ALB (use as NEXT_PUBLIC_API_URL when create_cloudfront = true)."
+  value       = length(aws_cloudfront_distribution.api) > 0 ? "https://${aws_cloudfront_distribution.api[0].domain_name}" : null
+}
+
+output "next_public_api_url" {
+  description = "Computed NEXT_PUBLIC_API_URL Amplify will receive (CloudFront > ALB-HTTPS > ALB-HTTP)."
+  value       = local.api_base_url
 }
 
 output "ecs_cluster_name" {

@@ -13,9 +13,9 @@ This pairs with [`INFRASTRUCTURE_EXPLAINED.md`](INFRASTRUCTURE_EXPLAINED.md), wh
 | **Website** | Next.js (React) | **Amplify** — pages, navigation, buttons |
 | **Brain API** | Python FastAPI + LangGraph | **ECS Fargate** — behind **ALB** |
 
-They talk over **HTTPS**: the website calls the API using a **public base URL** stored as **`NEXT_PUBLIC_API_URL`** at build time for Amplify.
+They talk over **HTTPS**: the website calls the API using a **public base URL** stored as **`NEXT_PUBLIC_API_URL`** at build time for Amplify. By default this points at a **CloudFront** distribution in front of the ALB, so the browser only ever sees an HTTPS URL (`https://dxxx.cloudfront.net`) and avoids the **mixed-content** block. CloudFront talks HTTP to the ALB on the origin side — no domain or ACM certificate required.
 
-**Note:** This repository does **not** use a variable named `NEXT_PUBLIC_APP_URL`. The **canonical URL of your web app** is usually Amplify’s default domain or a **custom domain** you add in Amplify. What we explicitly set for builds is **`NEXT_PUBLIC_API_URL`** so the browser knows **where the API lives** (the load balancer URL or your later `https://api...` domain).
+**Note:** This repository does **not** use a variable named `NEXT_PUBLIC_APP_URL`. The **canonical URL of your web app** is usually Amplify’s default domain or a **custom domain** you add in Amplify. What we explicitly set for builds is **`NEXT_PUBLIC_API_URL`** so the browser knows **where the API lives** — the **CloudFront** URL by default, or your later `https://api...` domain once you set `api_fqdn` + `enable_https_listener`.
 
 ---
 
@@ -26,6 +26,7 @@ sequenceDiagram
   participant User
   participant Browser
   participant Amplify as Amplify_Next.js
+  participant CF as CloudFront_HTTPS
   participant ALB as Load_balancer
   participant API as ECS_FastAPI
   participant Graph as LangGraph
@@ -36,7 +37,8 @@ sequenceDiagram
   User->>Browser: Types idea clicks Send
   Browser->>Amplify: Load app shell
   Amplify->>Browser: Pages JS CSS
-  Browser->>ALB: POST api chat SSE
+  Browser->>CF: POST api chat SSE over HTTPS
+  CF->>ALB: Forward over HTTP origin
   ALB->>API: Forward request
   API->>SM: Keys already in container env
   API->>Graph: Run advisor graph
@@ -47,7 +49,8 @@ sequenceDiagram
   Graph->>DB: Save plan checkpoints
   Graph-->>API: Stream events
   API-->>ALB: SSE chunks
-  ALB-->>Browser: Stream
+  ALB-->>CF: Stream
+  CF-->>Browser: Stream over HTTPS
   Browser-->>User: Live report chat
 ```
 
@@ -66,11 +69,11 @@ sequenceDiagram
 
 - **Amplify** hosts the built Next.js app.
 - Important env vars for the **build** (set in Amplify / Terraform) include:
-  - **`NEXT_PUBLIC_API_URL`** — base URL for all browser calls to your API (must point at your **ALB** or future API domain).
+  - **`NEXT_PUBLIC_API_URL`** — base URL for all browser calls to your API. Defaults to the **CloudFront** URL Terraform creates (`https://dxxx.cloudfront.net`); falls back to ALB-HTTPS (when a custom `api_fqdn` is set) or ALB-HTTP (local/dev only).
   - **`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`** (if you use Clerk) — safe to expose in the browser; **not** the secret key.
 - **Clerk’s secret key** for server-side auth can be supplied to Amplify from **Secrets Manager** in Terraform so server components or SSR can validate users—**never** put that secret in `NEXT_PUBLIC_*`.
 
-When the user submits a chat, the frontend opens a **streaming connection** (Server-Sent Events) to **`/api/chat`** on the API URL. That is why the API must be reachable from the user’s browser (CORS and correct `NEXT_PUBLIC_API_URL`).
+When the user submits a chat, the frontend opens a **streaming connection** (Server-Sent Events) to **`/api/chat`** on the API URL. That is why the API must be reachable from the user’s browser over **HTTPS** with the page origin allowed by **CORS** — Terraform passes the allow-list to the ECS task as **`CORS_ALLOW_ORIGINS`** (the Pydantic Settings value `cors_allow_origins`), and `CORSMiddleware` uses `allow_credentials=True`, so wildcards are not allowed.
 
 ---
 
@@ -142,13 +145,15 @@ The graph **loops** through phases until the plan is complete or the user must a
 | Call OpenAI / Tavily | **NAT Gateway** outbound + **Secrets Manager** keys |
 | Ship new backend code | **ECR** image + **GitHub Actions** deploy |
 | Ship frontend | **Amplify** build from Git |
-| HTTPS for API | **ACM** cert + ALB listener (after DNS validation) |
+| HTTPS for API (no domain) | **CloudFront** in front of ALB (`*.cloudfront.net` cert) |
+| HTTPS for API (custom domain) | **ACM** cert + ALB 443 listener (after DNS validation) |
+| Allow Amplify origin to call API | **`CORS_ALLOW_ORIGINS`** env on the ECS task (set via `var.cors_allow_origins`) |
 
 ---
 
 ## End-to-end story (one paragraph)
 
-A person opens your **Amplify** site, which was built from your **GitHub** repo. Their browser loads **JavaScript** that knows **`NEXT_PUBLIC_API_URL`**. When they start a plan, the browser opens a **streaming connection** to your **load balancer**, which sends traffic to a **healthy ECS task** running **FastAPI**. That task uses **keys from Secrets Manager**, runs the **LangGraph** advisor, reads and writes **Postgres** (and sometimes **Redis**), may call **OpenAI** and **Tavily** over the internet via **NAT**, and streams results back through the same path until the user sees a finished **plan**—with logs in **CloudWatch** and optional **Sentry** / **LangSmith** for operations.
+A person opens your **Amplify** site, which was built from your **GitHub** repo. Their browser loads **JavaScript** that knows **`NEXT_PUBLIC_API_URL`** (the **CloudFront** URL by default). When they start a plan, the browser opens a **streaming connection** to **CloudFront**, which forwards over HTTP to your **load balancer**, which sends traffic to a **healthy ECS task** running **FastAPI**. That task validates the page **Origin** against **`CORS_ALLOW_ORIGINS`**, uses **keys from Secrets Manager**, runs the **LangGraph** advisor, reads and writes **Postgres** (and sometimes **Redis**), may call **OpenAI** and **Tavily** over the internet via **NAT**, and streams results back through the same path until the user sees a finished **plan**—with logs in **CloudWatch** and optional **Sentry** / **LangSmith** for operations.
 
 ---
 

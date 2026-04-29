@@ -298,14 +298,14 @@ vercel login
 vercel --prod
 
 # Set environment variable in Vercel dashboard:
-# NEXT_PUBLIC_API_URL=http://[ALB_DNS_FROM_STEP_6]
+# NEXT_PUBLIC_API_URL=https://[CLOUDFRONT_OR_API_URL]  (HTTPS — see infra/README CloudFront section)
 ```
 
 **Option B: AWS Amplify**
 1. Go to AWS Amplify Console
 2. Connect your GitHub repository
 3. Select `frontend` folder as root
-4. Add environment variable: `NEXT_PUBLIC_API_URL=http://[ALB_DNS]`
+4. Add environment variable: `NEXT_PUBLIC_API_URL=https://[CLOUDFRONT_DOMAIN]` (from `terraform output cloudfront_url` or `next_public_api_url`; do not use bare `http://` ALB DNS from an HTTPS Amplify page — mixed content)
 5. Deploy
 
 ### Step 10: Setup GitHub Actions (Optional)

@@ -13,9 +13,22 @@ data "aws_secretsmanager_secret_version" "clerk_secret" {
 }
 
 locals {
+  # Browser must call the API over HTTPS when the page itself is on HTTPS (Amplify), or it
+  # gets blocked as mixed content. Preference order:
+  #   1. CloudFront (free *.cloudfront.net cert, no domain needed) — default for this env
+  #   2. ALB HTTPS via your own domain (api_fqdn + enable_https_listener) — future custom domain
+  #   3. ALB HTTP only — local/dev fallback when neither is set up yet
+  api_base_url = (
+    var.create_cloudfront && length(aws_cloudfront_distribution.api) > 0
+    ) ? "https://${aws_cloudfront_distribution.api[0].domain_name}" : (
+    (var.api_fqdn != "" && var.enable_https_listener)
+    ? "https://${var.api_fqdn}"
+    : "http://${aws_lb.main.dns_name}"
+  )
+
   amplify_env = merge(
     {
-      NEXT_PUBLIC_API_URL = "http://${aws_lb.main.dns_name}"
+      NEXT_PUBLIC_API_URL = local.api_base_url
     },
     var.next_public_clerk_publishable_key != "" ? { NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = var.next_public_clerk_publishable_key } : {},
     var.create_amplify_app ? { CLERK_SECRET_KEY = data.aws_secretsmanager_secret_version.clerk_secret[0].secret_string } : {}

@@ -8,7 +8,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -73,6 +73,12 @@ class Settings(BaseSettings):
         ],
         description="Allowed origins for CORS (frontend dev URL by default)",
     )
+
+    @field_validator("cors_allow_origins", mode="after")
+    @classmethod
+    def normalize_cors_origins(cls, v: list[str]) -> list[str]:
+        """Browsers send Origin without a trailing slash; tfvars typos with '/' break CORS."""
+        return [o.rstrip("/") for o in v]
 
     llm_default_timeout_seconds: float = 60.0
     llm_max_retries: int = 3

@@ -21,6 +21,7 @@ flowchart TB
   end
 
   subgraph aws_edge [AWS edge]
+    CF[CloudFront HTTPS edge]
     WAF[WAF Web filter]
     ALB[Load balancer ALB]
   end
@@ -48,10 +49,11 @@ flowchart TB
   end
 
   U --> AMP
-  U --> WAF
+  U -->|"HTTPS"| CF
+  CF -->|"HTTP"| WAF
   WAF --> ALB
   ALB --> ECS
-  AMP -->|"NEXT_PUBLIC_API_URL"| ALB
+  AMP -->|"NEXT_PUBLIC_API_URL"| CF
   ECS --> RDS
   ECS --> REDIS
   ECS --> S3
@@ -74,7 +76,7 @@ People open a **web address**. Two important URLs exist in this project:
 | What | Typical role |
 |------|----------------|
 | **Amplify URL** | Where the **React/Next.js website** is served (pages, buttons, styling). Think “the storefront.” |
-| **API URL** (`NEXT_PUBLIC_API_URL`) | Where the **browser sends questions** to your backend (the “brain”). In Terraform this points at the **load balancer** in front of your API. |
+| **API URL** (`NEXT_PUBLIC_API_URL`) | Where the **browser sends questions** to your backend (the “brain”). When `create_cloudfront = true` (default), this is the **CloudFront** URL (`https://dxxx.cloudfront.net`) which forwards to the ALB. With a custom API domain (`api_fqdn` + `enable_https_listener`) it points directly at the ALB over HTTPS. |
 
 There is **no** `NEXT_PUBLIC_APP_URL` in Secrets Manager or in Amplify Terraform in this repo on purpose. The **app’s own site URL** is whatever Amplify assigns (for example `main.xxxxx.amplifyapp.com`) or a **custom domain** you attach in the Amplify console. The variable we **do** wire for builds is **`NEXT_PUBLIC_API_URL`**—that’s “which server answers `/api/...` calls.”
 
@@ -89,14 +91,17 @@ There is **no** `NEXT_PUBLIC_APP_URL` in Secrets Manager or in Amplify Terraform
 
 ---
 
-### 3. WAF + Application Load Balancer (ALB)
+### 3. CloudFront + WAF + Application Load Balancer (ALB)
 
 Traffic that hits your **API** first goes through:
 
-- **WAF (Web Application Firewall)** — optional rules to block bad bots and common attacks before they reach your app.
+- **CloudFront** (optional, on by default) — gives you a free **`https://dxxx.cloudfront.net`** URL with the AWS-managed `*.cloudfront.net` certificate. The browser is happy because the page (Amplify) and the API (CloudFront) are both HTTPS, so there is no **mixed-content** block. CloudFront then talks **HTTP** to the ALB on the origin side, so you don’t need to buy a domain or set up ACM. Caching is fully disabled so SSE chat streams pass through unmodified.
+- **WAF (Web Application Firewall)** — managed rules to block bad bots, common attacks, and rate-abuse before they reach your app. Currently attached to the **ALB**.
 - **ALB** — distributes requests across **healthy** API containers and checks **health** (for example `/health`) so broken containers are not sent traffic.
 
-Think of the ALB as a **reception desk** that only sends visitors to workers who are actually ready.
+Think of the ALB as a **reception desk** that only sends visitors to workers who are actually ready, and CloudFront as the **HTTPS lobby** in front of the building.
+
+> Note (minimal setup): the ALB URL is still publicly reachable on HTTP. To lock it down so only CloudFront can hit it, add a custom-header check or restrict the ALB security group to the AWS-managed CloudFront prefix list. Out of scope here.
 
 ---
 
@@ -165,10 +170,10 @@ This is **not** your product data—it’s **how AWS resources are tracked**.
 
 ## How a typical request travels (infrastructure only)
 
-1. User loads the **Amplify** site (HTML/JS).
-2. The browser calls **`NEXT_PUBLIC_API_URL`** (your ALB) for API requests.
-3. **WAF → ALB → ECS task** receives the HTTP request.
-4. The task may read **Secrets Manager** values that were mounted as env vars at start.
+1. User loads the **Amplify** site (HTML/JS) over HTTPS.
+2. The browser calls **`NEXT_PUBLIC_API_URL`** for API requests — by default the **CloudFront** HTTPS URL.
+3. **CloudFront → WAF → ALB → ECS task** receives the request (CloudFront talks HTTP to the ALB).
+4. The task may read **Secrets Manager** values that were mounted as env vars at start, including **`CORS_ALLOW_ORIGINS`** so FastAPI accepts the Amplify page origin.
 5. The task talks to **Postgres** / **Redis** / **S3** inside the VPC and to **external APIs** via **NAT**.
 
 ---
@@ -177,9 +182,9 @@ This is **not** your product data—it’s **how AWS resources are tracked**.
 
 | You fill in (after apply) | Terraform creates |
 |---------------------------|-------------------|
-| Real secret values in **Secrets Manager** | VPC, subnets, NAT, ALB, WAF, ECS service, RDS, Redis, S3, Amplify **app shell** |
-| **Amplify:** connect Git branch in console | ECR repo, IAM roles, secret **containers** (names only) |
-| Optional **DNS** CNAMEs for HTTPS certificate | ACM cert request, listeners |
+| Real secret values in **Secrets Manager** | VPC, subnets, NAT, **CloudFront**, ALB, WAF, ECS service, RDS, Redis, S3, Amplify **app shell** |
+| `cors_allow_origins` (Amplify URL, custom domain) in `terraform.tfvars` | ECR repo, IAM roles, secret **containers** (names only) |
+| **Amplify:** connect Git branch in console, then trigger a rebuild so the new `NEXT_PUBLIC_API_URL` (CloudFront) is baked in | ACM cert request, listeners (only when `api_fqdn` + `enable_https_listener` are set) |
 
 ---
 

@@ -114,3 +114,13 @@ variable "next_public_clerk_publishable_key" {
   description = "Optional. Syncs to Amplify. Safe to be public (publishable key)."
   default     = ""
 }
+
+# --- CloudFront in front of the ALB so the browser sees HTTPS without a custom domain. ---
+# Browsers block https Amplify pages from calling http ALB URLs (mixed content). Putting
+# CloudFront in front gives a free https://dxxxx.cloudfront.net URL with the AWS-managed
+# *.cloudfront.net cert. CloudFront talks HTTP to the ALB on the origin side.
+variable "create_cloudfront" {
+  type        = bool
+  description = "Create a CloudFront distribution in front of the ALB so NEXT_PUBLIC_API_URL can be https."
+  default     = true
+}

@@ -243,16 +243,28 @@ terraform apply
 ```bash
 terraform output alb_http_url
 terraform output alb_dns_name
+terraform output cloudfront_url
+terraform output next_public_api_url
 terraform output -json acm_validation_records
 ```
 
-Save **`alb_http_url`**: the frontend will call this until you have HTTPS and a custom API domain.
+Save **`next_public_api_url`** (or **`cloudfront_url`**): this is what **`NEXT_PUBLIC_API_URL`** should be for Amplify — by default the **CloudFront** HTTPS URL so the browser does not block API calls as mixed content. The bare **`alb_http_url`** is only for direct curl testing or local debugging, not for a public HTTPS frontend.
 
 ---
 
-## Part 8 — HTTPS with your own domain (optional)
+## Part 8a — HTTPS without a domain (default: CloudFront)
 
-**Why:** Browsers and Clerk often want `https` for the API URL. This stack does **not** use Route 53: you add **CNAMEs** for ACM at your **registrar** or **Cloudflare**.
+**Why:** An HTTPS Amplify page cannot call `http://...elb.amazonaws.com` (mixed content). Terraform creates **CloudFront** in front of the ALB by default (`create_cloudfront = true`), giving a free **`https://dxxx.cloudfront.net`** URL.
+
+1. In `infra/envs/dev/terraform.tfvars` set **`cors_allow_origins`** to a JSON-style list containing your Amplify page origin, e.g. `cors_allow_origins = ["https://main.xxxxx.amplifyapp.com"]`.  
+2. `terraform apply` in `infra/envs/dev`.  
+3. Read `terraform output next_public_api_url` — Terraform already wires this into the Amplify app’s **`NEXT_PUBLIC_API_URL`**.  
+4. **Redeploy** the Amplify frontend so the new URL is baked into the bundle.  
+5. Test: `curl "$(terraform output -raw cloudfront_url)/health"` should return healthy.
+
+## Part 8b — HTTPS with your own domain on the ALB (optional)
+
+**Why:** You want `https://api.yourdomain.com` directly on the ALB instead of (or in addition to) CloudFront. This stack does **not** use Route 53: you add **CNAMEs** for ACM at your **registrar** or **Cloudflare**.
 
 1. In `infra/envs/dev/terraform.tfvars` set, for example, `api_fqdn = "api.example.com"`.  
 2. Run `terraform apply` in `infra/envs/dev` again.  
@@ -260,7 +272,7 @@ Save **`alb_http_url`**: the frontend will call this until you have HTTPS and a 
 4. Wait for the certificate in **ACM** to be **Issued** (AWS console, same region as the ALB).  
 5. Set `enable_https_listener = true` in the same `tfvars`, then `terraform apply` again.  
 6. Add a **DNS A/ALIAS or CNAME** for `api.example.com` pointing to the **ALB** (from outputs / console).  
-7. In **Amplify** app environment variables, set `NEXT_PUBLIC_API_URL` to `https://api.example.com` (or your real URL) and redeploy the frontend.
+7. If you also use CloudFront, `NEXT_PUBLIC_API_URL` still prefers CloudFront unless you set `create_cloudfront = false`; then set Amplify’s **`NEXT_PUBLIC_API_URL`** to `https://api.example.com` and redeploy the frontend.
 
 ---
 
@@ -328,12 +340,12 @@ Substitute two subnet IDs and the security group id from `terraform output farga
 
 ## Part 12 — Amplify (frontend)
 
-**Why:** The **browser** does not use Docker from this guide; it loads the Next app from **Amplify** and calls the **ALB** URL in `NEXT_PUBLIC_API_URL`.
+**Why:** The **browser** does not use Docker from this guide; it loads the Next app from **Amplify** and calls the API URL in `NEXT_PUBLIC_API_URL` — by default the **CloudFront** HTTPS URL from Part 8a.
 
 1. AWS **Amplify** → your app (created by Terraform) → **Host** → **Connect** your Git branch (OAuth to GitHub).  
 2. Make sure the repo’s **`amplify.yml`** matches your layout (this monorepo builds from `frontend/` at the root file).  
-3. In the Amplify app, check **Environment variables** for `NEXT_PUBLIC_API_URL` = your API URL (from Part 7 or Part 8).  
-4. If the page loads but API calls fail, set **CORS** on the FastAPI app to allow the Amplify domain.
+3. In the Amplify app, check **Environment variables** for `NEXT_PUBLIC_API_URL` = `terraform output next_public_api_url` (CloudFront by default). After any Terraform change to that value, **rebuild** Amplify.  
+4. If the page loads but API calls fail with CORS errors, verify **`cors_allow_origins`** in `terraform.tfvars` includes the exact **`https://`** Amplify URL (same origin the browser shows in the address bar). Terraform passes this to ECS as **`CORS_ALLOW_ORIGINS`**.
 
 ---
 
