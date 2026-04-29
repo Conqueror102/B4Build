@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -12,6 +13,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from ..database_url import normalize_database_url_for_async_engine
 from ..logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -23,49 +25,28 @@ _session_factory: async_sessionmaker[AsyncSession] | None = None
 def init_engine(database_url: str) -> None:
     """Initialize the global async engine and session factory.
 
-    Normalizes ``postgresql://`` URLs to use the asyncpg driver, and skips
-    pool sizing for SQLite (which uses a single-connection pool).
-    
-    For AWS RDS: Handles sslmode parameter correctly for asyncpg driver.
+    Normalizes PostgreSQL URLs for the asyncpg driver and RDS TLS without relying on
+    fragile regex over the connection string.
     """
     global _engine, _session_factory
 
-    url = database_url
-    
-    # Normalize to use asyncpg driver
-    if url.startswith("postgresql://"):
-        url = "postgresql+asyncpg://" + url[len("postgresql://") :]
-    
-    # Remove sslmode from query string (asyncpg doesn't support it)
-    # Instead, use ssl=true which asyncpg understands
-    if "?sslmode=" in url or "&sslmode=" in url:
-        # Remove sslmode parameter
-        import re
-        url = re.sub(r'[?&]sslmode=[^&]*', '', url)
-        # Add ssl=true if not already present
-        if "ssl=" not in url.lower():
-            url = f"{url}{'&' if '?' in url else '?'}ssl=true"
-    
+    url, connect_args = normalize_database_url_for_async_engine(database_url)
     is_sqlite = url.startswith("sqlite")
-    
-    # Ensure SSL is enabled for PostgreSQL if not already specified
-    if not is_sqlite and "postgresql" in url:
-        u = url.lower()
-        if "ssl=" not in u:
-            url = f"{url}{'&' if '?' in url else '?'}ssl=true"
 
     if is_sqlite:
         engine = create_async_engine(url, future=True)
     else:
-        engine = create_async_engine(
-            url,
-            pool_pre_ping=True,  # Verify connections before using (critical for Neon)
-            pool_size=3,  # Reduced for Neon
-            max_overflow=5,  # Reduced for Neon
-            pool_recycle=1800,  # Recycle connections after 30 minutes (Neon closes idle connections)
-            pool_timeout=30,  # Wait up to 30s for a connection
-            future=True,
-        )
+        eng_kwargs: dict[str, Any] = {
+            "pool_pre_ping": True,
+            "pool_size": 3,
+            "max_overflow": 5,
+            "pool_recycle": 1800,
+            "pool_timeout": 30,
+            "future": True,
+        }
+        if connect_args:
+            eng_kwargs["connect_args"] = connect_args
+        engine = create_async_engine(url, **eng_kwargs)
 
     _engine = engine
     _session_factory = async_sessionmaker(

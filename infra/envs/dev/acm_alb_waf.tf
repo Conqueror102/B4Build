@@ -55,33 +55,6 @@ resource "aws_wafv2_web_acl" "alb" {
     allow {}
   }
 
-
-  rule {
-    name     = "allow-cors-preflight-options"
-    priority = 0
-    action {
-      allow {}
-    }
-    statement {
-      byte_match_statement {
-        positional_constraint = "EXACTLY"
-        search_string         = "OPTIONS"
-        field_to_match {
-          method {}
-        }
-        text_transformation {
-          priority = 0
-          type     = "NONE"
-        }
-      }
-    }
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "cors-options"
-      sampled_requests_enabled   = true
-    }
-  }
-
   rule {
     name     = "AWS-AWSManagedRulesCommonRuleSet"
     priority = 1

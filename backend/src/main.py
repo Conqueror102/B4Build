@@ -7,8 +7,10 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import sentry_sdk
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.requests import Request
 
 from .api import chat, export, health, plan
 from .db import models
@@ -67,6 +69,22 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     logger.info("app.shutdown")
 
 
+def _cors_headers_for_request(request: Request) -> dict[str, str]:
+    """Mirror CORSMiddleware so error responses still allow browser JS to read status/body."""
+    origin = request.headers.get("origin")
+    if not origin:
+        return {}
+    settings = get_settings()
+    normalized = origin.rstrip("/")
+    allowed = {o.rstrip("/") for o in settings.cors_allow_origins}
+    if normalized not in allowed:
+        return {}
+    return {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Credentials": "true",
+    }
+
+
 def create_app() -> FastAPI:
     """Application factory."""
     settings = get_settings()
@@ -85,6 +103,29 @@ def create_app() -> FastAPI:
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
     )
+
+    # Unhandled exceptions bypass CORSMiddleware response wrapping; browsers then show a CORS
+    # error even when the real problem is e.g. HTTP 500. Attach the same allow-origin headers.
+    @app.middleware("http")
+    async def cors_headers_on_errors(request: Request, call_next):  # type: ignore[misc]
+        logger = get_logger(__name__)
+        try:
+            return await call_next(request)
+        except HTTPException as exc:
+            extra = dict(exc.headers) if exc.headers else {}
+            headers = {**_cors_headers_for_request(request), **extra}
+            return JSONResponse(
+                content={"detail": exc.detail},
+                status_code=exc.status_code,
+                headers=headers,
+            )
+        except Exception:
+            logger.exception("unhandled_exception")
+            return JSONResponse(
+                status_code=500,
+                content={"detail": "Internal server error"},
+                headers=_cors_headers_for_request(request),
+            )
 
     app.include_router(health.router)
     app.include_router(chat.router)

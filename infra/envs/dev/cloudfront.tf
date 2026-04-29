@@ -11,6 +11,30 @@
 # Managed policy IDs (AWS-published, stable):
 #   CachingDisabled                  4135ea2d-6df8-44a3-9df3-4b5a84be39ad
 #   AllViewerExceptHostHeader        b689b0a8-53d0-40ab-baf2-68738e2966ac
+#   CORS-with-preflight              5cc3b908-e619-4b99-88e5-2cf7f45965bd
+
+# Custom origin request policy that forwards the Origin header for CORS
+resource "aws_cloudfront_origin_request_policy" "cors_forward" {
+  count = var.create_cloudfront ? 1 : 0
+  
+  name    = "${local.name_prefix}-cors-forward"
+  comment = "Forward Origin header for CORS + all query strings"
+  
+  cookies_config {
+    cookie_behavior = "none"
+  }
+  
+  headers_config {
+    header_behavior = "whitelist"
+    headers {
+      items = ["Origin", "Access-Control-Request-Headers", "Access-Control-Request-Method"]
+    }
+  }
+  
+  query_strings_config {
+    query_string_behavior = "all"
+  }
+}
 
 resource "aws_cloudfront_distribution" "api" {
   count = var.create_cloudfront ? 1 : 0
@@ -42,8 +66,8 @@ resource "aws_cloudfront_distribution" "api" {
     cached_methods         = ["GET", "HEAD"]
     compress               = false
 
-    cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
-    origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
+    cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"  # CachingDisabled
+    origin_request_policy_id = aws_cloudfront_origin_request_policy.cors_forward[0].id  # Custom policy with Origin header
   }
 
   restrictions {

@@ -1,13 +1,9 @@
 name: Terraform
 
+# Terraform apply runs locally (terraform.tfvars is gitignored; CI apply used defaults and
+# could revert ECS env vars such as CORS_ALLOW_ORIGINS). PRs still get plan + fmt + validate.
 on:
   pull_request:
-    paths:
-      - 'infra/**'
-      - '.github/workflows/terraform.yml'
-  push:
-    branches:
-      - main
     paths:
       - 'infra/**'
       - '.github/workflows/terraform.yml'
@@ -29,7 +25,7 @@ jobs:
   terraform-plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout code
@@ -109,55 +105,3 @@ jobs:
               repo: context.repo.repo,
               body: output
             })
-
-  terraform-apply:
-    name: Terraform Apply
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Resolve ecr_image_tag
-        id: ecr_tag
-        run: |
-          set -e
-          TAG="latest"
-          if TD_ARN=$(aws ecs describe-services --cluster "$ECS_CLUSTER" --services "$ECS_SERVICE" --query 'services[0].taskDefinition' --output text 2>/dev/null) && [ -n "$TD_ARN" ] && [ "$TD_ARN" != "None" ]; then
-            if IMG=$(aws ecs describe-task-definition --task-definition "$TD_ARN" --query 'taskDefinition.containerDefinitions[0].image' --output text 2>/dev/null) && [ -n "$IMG" ]; then
-              TAG="${IMG##*:}"
-            fi
-          fi
-          echo "ecr_image_tag=$TAG" >> "$GITHUB_OUTPUT"
-        env:
-          ECS_CLUSTER: ${{ env.ECS_CLUSTER }}
-          ECS_SERVICE: ${{ env.ECS_SERVICE }}
-          AWS_REGION: ${{ env.AWS_REGION }}
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TF_VERSION }}
-          terraform_wrapper: false
-
-      - name: Terraform Init
-        run: |
-          cd infra/envs/dev
-          terraform init -input=false
-
-      - name: Terraform Apply
-        run: |
-          cd infra/envs/dev
-          terraform apply -auto-approve -var="ecr_image_tag=${{ steps.ecr_tag.outputs.ecr_image_tag }}"
-
-      - name: Output summary
-        run: |
-          cd infra/envs/dev
-          terraform output
