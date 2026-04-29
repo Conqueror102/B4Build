@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -23,7 +22,7 @@ class ChatResponse(BaseModel):
 def _extract_relevant_context(plan_dict: dict, user_message: str) -> str:
     """Extract relevant parts of the plan based on what the user is asking about."""
     message_lower = user_message.lower()
-    
+
     # Map keywords to plan sections
     phase_keywords = {
         "pressure": ["pressure_test"],
@@ -61,29 +60,31 @@ def _extract_relevant_context(plan_dict: dict, user_message: str) -> str:
         "critique": ["red_team"],
         "risk": ["red_team"],
     }
-    
+
     # Find which sections are relevant
     relevant_sections = set()
     for keyword, sections in phase_keywords.items():
         if keyword in message_lower:
             relevant_sections.update(sections)
-    
+
     # If no specific section found, include executive summary and a few key sections
     if not relevant_sections:
         relevant_sections = {"executive_summary", "next_steps", "idea"}
-    
+
     # Build context from relevant sections
     context_parts = []
     for section in relevant_sections:
-        if section in plan_dict and plan_dict[section]:
-            context_parts.append(f"## {section.replace('_', ' ').title()}\n{json.dumps(plan_dict[section], default=str, indent=2)}")
-    
+        if plan_dict.get(section):
+            context_parts.append(
+                f"## {section.replace('_', ' ').title()}\n{json.dumps(plan_dict[section], default=str, indent=2)}"
+            )
+
     # Add metadata
     if "plan_id" in plan_dict:
         context_parts.insert(0, f"Plan ID: {plan_dict['plan_id']}")
     if "idea" in plan_dict and "idea" not in relevant_sections:
         context_parts.insert(1, f"Original Idea: {plan_dict['idea']}")
-    
+
     return "\n\n".join(context_parts)
 
 
@@ -98,7 +99,6 @@ async def chat_responder_node(state: AdvisorState) -> dict[str, Any]:
 
     intent_metadata = state.get("metadata", {}).get("intent_classification", {})
     intent_str = intent_metadata.get("intent", "chat")
-    target_phase = intent_metadata.get("target_phase")
 
     system_msg = (
         "You are the AI Build Advisor. You have already generated a comprehensive architecture plan for the user.\n"
@@ -106,11 +106,15 @@ async def chat_responder_node(state: AdvisorState) -> dict[str, Any]:
     )
 
     if state.get("final_plan"):
-        plan_dict = state["final_plan"].model_dump(mode="json") if hasattr(state["final_plan"], "model_dump") else state["final_plan"]
-        
+        plan_dict = (
+            state["final_plan"].model_dump(mode="json")
+            if hasattr(state["final_plan"], "model_dump")
+            else state["final_plan"]
+        )
+
         # Extract relevant context based on what the user is asking about
         relevant_context = _extract_relevant_context(plan_dict, latest_msg)
-        
+
         system_msg += f"Here is the relevant context from the plan:\n\n{relevant_context}\n\n"
 
     if intent_str == "deep_dive":
@@ -135,7 +139,7 @@ async def chat_responder_node(state: AdvisorState) -> dict[str, Any]:
         reply = await client.complete_structured(
             messages=[
                 {"role": "system", "content": system_msg},
-                {"role": "user", "content": latest_msg}
+                {"role": "user", "content": latest_msg},
             ],
             schema=ChatResponse,
             request_id=request_id,

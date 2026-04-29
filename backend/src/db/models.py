@@ -66,9 +66,7 @@ class Base(DeclarativeBase):
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
     clerk_user_id: Mapped[str | None] = mapped_column(
         String(255), unique=True, nullable=True, index=True
     )
@@ -84,9 +82,7 @@ class User(Base):
 class Plan(Base):
     __tablename__ = "plans"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID | None] = mapped_column(
         GUID(),
         ForeignKey("users.id", ondelete="SET NULL"),
@@ -105,9 +101,7 @@ class Plan(Base):
         ),
         nullable=True,
     )
-    status: Mapped[str] = mapped_column(
-        String(32), nullable=False, default="in_progress"
-    )
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="in_progress")
     total_cost_usd: Mapped[Decimal] = mapped_column(
         Numeric(10, 4), nullable=False, default=Decimal("0")
     )
@@ -131,9 +125,7 @@ Index("ix_plans_created_at", Plan.created_at.desc())
 class PlanVersion(Base):
     __tablename__ = "plan_versions"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
     plan_id: Mapped[uuid.UUID] = mapped_column(
         GUID(),
         ForeignKey("plans.id", ondelete="CASCADE"),
@@ -149,24 +141,17 @@ class PlanVersion(Base):
     )
 
     __table_args__ = (
-        UniqueConstraint(
-            "plan_id", "version_num", name="uq_plan_versions_plan_version"
-        ),
+        UniqueConstraint("plan_id", "version_num", name="uq_plan_versions_plan_version"),
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<PlanVersion id={self.id} plan_id={self.plan_id} "
-            f"version_num={self.version_num}>"
-        )
+        return f"<PlanVersion id={self.id} plan_id={self.plan_id} version_num={self.version_num}>"
 
 
 class ConversationTurn(Base):
     __tablename__ = "conversation_turns"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
     plan_id: Mapped[uuid.UUID] = mapped_column(
         GUID(),
         ForeignKey("plans.id", ondelete="CASCADE"),
@@ -198,9 +183,7 @@ Index(
 class AgentOutput(Base):
     __tablename__ = "agent_outputs"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
     plan_id: Mapped[uuid.UUID] = mapped_column(
         GUID(),
         ForeignKey("plans.id", ondelete="CASCADE"),
@@ -215,9 +198,7 @@ class AgentOutput(Base):
     output_json: Mapped[dict] = mapped_column(JSONType, nullable=False)
     input_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     output_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    cost_usd: Mapped[Decimal] = mapped_column(
-        Numeric(10, 6), nullable=False, default=Decimal("0")
-    )
+    cost_usd: Mapped[Decimal] = mapped_column(Numeric(10, 6), nullable=False, default=Decimal("0"))
     latency_ms: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     model: Mapped[str] = mapped_column(String(64), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -241,12 +222,8 @@ Index(
 class DailySpend(Base):
     __tablename__ = "daily_spend"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4
-    )
-    spend_date: Mapped[date] = mapped_column(
-        Date, unique=True, index=True, nullable=False
-    )
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
+    spend_date: Mapped[date] = mapped_column(Date, unique=True, index=True, nullable=False)
     total_cost_usd: Mapped[Decimal] = mapped_column(
         Numeric(10, 6), nullable=False, default=Decimal("0")
     )

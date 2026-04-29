@@ -17,7 +17,9 @@ def _is_list(val: Any) -> bool:
     return isinstance(val, list)
 
 
-def diff_dicts(old_dict: dict[str, Any], new_dict: dict[str, Any], path: str = "") -> list[dict[str, Any]]:
+def diff_dicts(
+    old_dict: dict[str, Any], new_dict: dict[str, Any], path: str = ""
+) -> list[dict[str, Any]]:
     """Compare two dictionaries and return a list of JSON Patch-like operations."""
     diffs: list[dict[str, Any]] = []
 
@@ -50,4 +52,3 @@ def diff_dicts(old_dict: dict[str, Any], new_dict: dict[str, Any], path: str = "
             diffs.append({"op": "replace", "path": current_path, "old": old_val, "new": new_val})
 
     return diffs
-

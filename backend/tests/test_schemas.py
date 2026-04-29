@@ -10,35 +10,35 @@ from datetime import UTC, datetime
 
 from src.schemas.intake import IntakeAnswers
 from src.schemas.phases import (
-    Architecture,
-    ArchitectureComponent,
     ApiDesign,
     ApiEndpoint,
+    Architecture,
+    ArchitectureComponent,
     BuildBuyTrain,
     BuildPhase,
     CostLineItem,
     CostModel,
     CostScenario,
     DataEntity,
+    DeploymentPlan,
+    FeatureModule,
     GitHubSearchContext,
     InfraLayer,
     Infrastructure,
     ManagedToolRecommendation,
-    OpenSourceRepo,
     ObservabilityPlan,
+    OpenSourceRepo,
     PressureTestResult,
     ProblemModelFit,
     RiskItem,
+    ScalingPlan,
     ScopeDefinition,
-    FeatureModule,
+    SecurityDesign,
+    SecurityPlan,
     ServiceComponent,
     ToolsOpenSourcePhase,
     UiUxApproach,
-    SecurityDesign,
-    DeploymentPlan,
     UserStory,
-    ScalingPlan,
-    SecurityPlan,
     normalize_infrastructure_payload,
 )
 from src.schemas.plan import FullPlan, RedTeamCritique, RedTeamFinding
@@ -76,24 +76,36 @@ def _make_architecture() -> Architecture:
             FeatureModule(
                 name="Auth",
                 description="Sign-in and access control.",
-                user_stories=[UserStory(as_a="User", i_want="to sign in", so_that="my data is private")],
+                user_stories=[
+                    UserStory(as_a="User", i_want="to sign in", so_that="my data is private")
+                ],
             ),
             FeatureModule(
                 name="Docs",
                 description="Ingest and manage documents.",
-                user_stories=[UserStory(as_a="Admin", i_want="to upload docs", so_that="they are searchable")],
+                user_stories=[
+                    UserStory(as_a="Admin", i_want="to upload docs", so_that="they are searchable")
+                ],
             ),
             FeatureModule(
                 name="Q&A",
                 description="Ask questions and get cited answers.",
-                user_stories=[UserStory(as_a="User", i_want="to ask questions", so_that="I get answers fast")],
+                user_stories=[
+                    UserStory(as_a="User", i_want="to ask questions", so_that="I get answers fast")
+                ],
             ),
         ],
         system_architecture=[
             ServiceComponent(name="Web", responsibility="UI", technology="Next.js"),
-            ServiceComponent(name="API", responsibility="Auth + orchestration", technology="FastAPI"),
-            ServiceComponent(name="DB", responsibility="Store docs + vectors", technology="Postgres+pgvector"),
-            ServiceComponent(name="LLM", responsibility="Generate answers", technology="gpt-4o-mini"),
+            ServiceComponent(
+                name="API", responsibility="Auth + orchestration", technology="FastAPI"
+            ),
+            ServiceComponent(
+                name="DB", responsibility="Store docs + vectors", technology="Postgres+pgvector"
+            ),
+            ServiceComponent(
+                name="LLM", responsibility="Generate answers", technology="gpt-4o-mini"
+            ),
         ],
         components=[
             ArchitectureComponent(

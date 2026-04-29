@@ -10,8 +10,7 @@ from decimal import Decimal
 from typing import Any
 
 import psycopg
-from fastapi import APIRouter
-from fastapi import Request
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
@@ -40,7 +39,7 @@ def _sse(event: str, data: dict[str, Any], phase_id: str | None = None) -> str:
     payload = {"event": event, "phase_id": phase_id, "data": data}
     # Send proper SSE frames so the frontend parser sees `message.event`.
     # (eventsource-parser ignores messages without an `event:` line.)
-    return f"event: {event}\n" f"data: {json.dumps(payload, default=str)}\n\n"
+    return f"event: {event}\ndata: {json.dumps(payload, default=str)}\n\n"
 
 
 def _serialize_phase_output(value: Any) -> Any:
@@ -90,7 +89,7 @@ async def _run_graph_stream(
             "request_id": request_id,
             "plan_id": str(plan_u),
             "active_phase_order": active_phase_order,
-        }
+        },
     }
 
     # If the user is starting a brand new plan, we need to initialize `idea` as well.
@@ -162,6 +161,7 @@ async def _run_graph_stream(
                             old_dict = old_plan.model_dump(mode="json") if old_plan else {}
 
                             from ..services.diff_engine import diff_dicts
+
                             plan_diff = diff_dicts(old_dict, plan_dict)
                             if plan_diff:
                                 yield _sse("diff", {"diff": plan_diff})
@@ -182,9 +182,7 @@ async def _run_graph_stream(
                                     full_plan_json=plan_dict,
                                 )
                             except Exception:
-                                logger.exception(
-                                    "agent_outputs.persist_failed", plan_id=actual_id
-                                )
+                                logger.exception("agent_outputs.persist_failed", plan_id=actual_id)
                             # Update store so subsequent requests hit the cache
                             store.put(plan_model)
                     except Exception:
@@ -203,7 +201,7 @@ async def _run_graph_stream(
                     new_msgs = partial.get("messages", [])
                     if new_msgs:
                         assistant_msg = new_msgs[-1]["content"]
-                        
+
                         # Save assistant response to database
                         try:
                             async with get_session() as session:
@@ -215,8 +213,12 @@ async def _run_graph_stream(
                                     intent=None,
                                 )
                         except Exception as e:
-                            logger.error("chat.save_assistant_message_failed", plan_id=str(plan_u), error=str(e))
-                        
+                            logger.error(
+                                "chat.save_assistant_message_failed",
+                                plan_id=str(plan_u),
+                                error=str(e),
+                            )
+
                         yield _sse("chat_reply", {"message": assistant_msg})
                         yield _sse("done", {"plan_id": str(plan_u), "plan": None})
                         return
@@ -276,11 +278,7 @@ async def chat(req: ChatRequest, request: Request) -> StreamingResponse | JSONRe
             )
 
     plan_parsed = _parse_plan_uuid(req.plan_id)
-    plan_u: uuid.UUID
-    if plan_parsed is None:
-        plan_u = uuid.uuid4()
-    else:
-        plan_u = plan_parsed
+    plan_u = uuid.uuid4() if plan_parsed is None else plan_parsed
 
     async with get_session() as session:
         uu = uuid.UUID(settings.default_local_user_id)
@@ -304,9 +302,7 @@ async def chat(req: ChatRequest, request: Request) -> StreamingResponse | JSONRe
             return JSONResponse(status_code=403, content={"detail": "forbidden"})
 
         conv = ConversationsRepository(session)
-        await conv.add_turn(
-            plan_id=plan_u, role="user", content=req.idea, intent="chat"
-        )
+        await conv.add_turn(plan_id=plan_u, role="user", content=req.idea, intent="chat")
 
     async def gen() -> AsyncIterator[bytes]:
         try:

@@ -14,7 +14,7 @@ def test_asyncpg_prefix_stripped() -> None:
 
 def test_password_special_chars_encoded() -> None:
     # Characters that break naive URLs if unencoded
-    pwd = 'p@ss#word$99^foo!bar*baz%qux'
+    pwd = "p@ss#word$99^foo!bar*baz%qux"
     raw = f"postgresql://admin:{pwd}@db.example.com:5432/appdb"
     out = to_psycopg_conninfo(raw)
     parsed = urlparse(out)

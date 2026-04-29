@@ -30,4 +30,6 @@ async def record_openai_spend_from_llm(
                 plans = PlansRepository(session)
                 await plans.add_cost(plan_id, d)
     except Exception as exc:
-        logger.warning("spend.record_failed", error=str(exc), plan_id=str(plan_id) if plan_id else None)
+        logger.warning(
+            "spend.record_failed", error=str(exc), plan_id=str(plan_id) if plan_id else None
+        )

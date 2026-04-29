@@ -5,8 +5,9 @@ Single source of truth for configuration. Never read os.environ directly elsewhe
 
 from __future__ import annotations
 
+import json
 from functools import lru_cache
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -73,6 +74,17 @@ class Settings(BaseSettings):
         ],
         description="Allowed origins for CORS (frontend dev URL by default)",
     )
+
+    @field_validator("cors_allow_origins", mode="before")
+    @classmethod
+    def parse_cors_allow_origins(cls, v: Any) -> Any:
+        """ECS passes JSON in env; pydantic-settings may leave a string — parse explicitly."""
+        if isinstance(v, str) and v.strip().startswith("["):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return v
+        return v
 
     @field_validator("cors_allow_origins", mode="after")
     @classmethod

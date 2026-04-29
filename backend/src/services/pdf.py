@@ -119,12 +119,7 @@ def _table_style() -> TableStyle:
 
 def _escape(text: Any) -> str:
     """Escape characters reportlab's mini-HTML parser treats as markup."""
-    return (
-        str(text)
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-    )
+    return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def _render_value(val: Any, styles: dict[str, ParagraphStyle] | None = None) -> Any:
@@ -158,7 +153,10 @@ def _render_value(val: Any, styles: dict[str, ParagraphStyle] | None = None) -> 
         if all(not isinstance(item, (dict, list, tuple, set)) for item in items):
             bullets = "<br/>".join(f"&bull; {_escape(item)}" for item in items)
             return Paragraph(bullets, body)
-        rows = [[Paragraph(f"{idx + 1}.", body), _render_value(item, styles)] for idx, item in enumerate(items)]
+        rows = [
+            [Paragraph(f"{idx + 1}.", body), _render_value(item, styles)]
+            for idx, item in enumerate(items)
+        ]
         table = Table(rows, colWidths=[0.4 * inch, 6.1 * inch])
         table.setStyle(_table_style())
         return table
@@ -221,7 +219,9 @@ def _phase_elements(phase_id: str, output: Any, styles: dict[str, ParagraphStyle
         else:
             elements.append(
                 Paragraph(
-                    f"<b>{_escape(key)}:</b> {_escape(value)}" if value not in ("", None) else f"<b>{_escape(key)}:</b> <i>—</i>",
+                    f"<b>{_escape(key)}:</b> {_escape(value)}"
+                    if value not in ("", None)
+                    else f"<b>{_escape(key)}:</b> <i>—</i>",
                     styles["body"],
                 )
             )
@@ -291,7 +291,9 @@ def _cover_elements(full_plan: FullPlan, styles: dict[str, ParagraphStyle]) -> l
     elements.append(Spacer(1, 0.4 * inch))
 
     try:
-        summary = getattr(full_plan, "idea_summary", None) or getattr(full_plan, "executive_summary", None)
+        summary = getattr(full_plan, "idea_summary", None) or getattr(
+            full_plan, "executive_summary", None
+        )
     except Exception:
         summary = None
     if summary:

@@ -48,7 +48,9 @@ async def phase_worker_node(state: AdvisorState) -> dict[str, Any]:
 
             idea = state.get("idea", "")
             architecture = state.get("phase_outputs", {}).get("phase_2")
-            arch_pattern = architecture.pattern if architecture and hasattr(architecture, "pattern") else None
+            arch_pattern = (
+                architecture.pattern if architecture and hasattr(architecture, "pattern") else None
+            )
 
             query = build_search_query(idea, arch_pattern)
             github_query = query

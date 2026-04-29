@@ -1,6 +1,6 @@
 """Sync LangSmith / LangChain tracing settings into ``os.environ``.
 
-LangSmith’s SDK reads env vars at runtime; pydantic-settings loads `.env` into
+LangSmith's SDK reads env vars at runtime; pydantic-settings loads `.env` into
 ``Settings`` but does not always expose the same values to child libraries.
 Call :func:`configure_langsmith_env` once at app startup before graph/LLM use.
 """

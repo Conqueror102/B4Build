@@ -43,7 +43,7 @@ entry for the primary hosted dependency (e.g. "OpenAI API" or "Anthropic API") w
 clear role_in_app.
 
 ## integration_summary
-2-5 sentences tying chosen repos + tools to Phase 0–2 context. No generic filler.
+2-5 sentences tying chosen repos + tools to Phase 0-2 context. No generic filler.
 
 Do NOT output build/buy/fine_tune enums or candidate_vendors-only lists from the old format."""
 

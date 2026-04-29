@@ -50,7 +50,7 @@ Return ONE JSON object (not markdown) with EXACTLY these top-level keys:
 
 **line_items** (minimum 5 rows when prior phases are detailed): cover at
 least: LLM/inference, hosting/edge, database/storage, search or vector (if
-in arch/infra), auth (if any), one observability/CI or API tool from P3–P4, and
+in arch/infra), auth (if any), one observability/CI or API tool from P3-P4, and
 anything else that is clearly a paid or usage line. Use **tied_to** with
    clear references like "P2: RAG", "P3: [tool from tools phase]", "P4 MVP: [layer name]".
    Mark honestly **free** only when the product has a true free tier or

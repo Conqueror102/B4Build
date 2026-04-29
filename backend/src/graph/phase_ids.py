@@ -12,7 +12,6 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-
 # Canonical execution ids used by PHASE_REGISTRY / PHASE_ORDER.
 CANONICAL_PHASE_ORDER: list[str] = [
     "phase_0",
@@ -103,4 +102,3 @@ def normalize_phase_list(
     idx = {pid: i for i, pid in enumerate(order)}
     canonical.sort(key=lambda p: idx.get(p, 10_000))
     return canonical
-

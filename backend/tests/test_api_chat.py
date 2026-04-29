@@ -21,35 +21,35 @@ from src.llm import client as llm_client_module
 from src.main import create_app
 from src.prompts.coordinator import ClarifyingQuestion, ClarifyingQuestions
 from src.prompts.synthesizer import SynthesizerOutput
-from tests.test_schemas import _make_infrastructure, _make_tools_open_source_phase
-
 from src.schemas.phases import (
-    Architecture,
-    ArchitectureComponent,
     ApiDesign,
     ApiEndpoint,
+    Architecture,
+    ArchitectureComponent,
+    BuildPhase,
     CostLineItem,
     CostModel,
     CostScenario,
-    BuildPhase,
     DataEntity,
+    DeploymentPlan,
+    FeatureModule,
     Infrastructure,
     ObservabilityPlan,
     PressureTestResult,
     ProblemModelFit,
     RiskItem,
-    ScopeDefinition,
-    FeatureModule,
-    ServiceComponent,
-    UiUxApproach,
-    SecurityDesign,
-    DeploymentPlan,
-    UserStory,
     ScalingPlan,
+    ScopeDefinition,
+    SecurityDesign,
     SecurityPlan,
+    ServiceComponent,
     ToolsOpenSourcePhase,
+    UiUxApproach,
+    UserStory,
 )
 from src.schemas.plan import RedTeamCritique, RedTeamFinding
+
+from tests.test_schemas import _make_infrastructure, _make_tools_open_source_phase
 
 
 def _fixture_for(schema: type[BaseModel]) -> BaseModel:
@@ -83,29 +83,47 @@ def _fixture_for(schema: type[BaseModel]) -> BaseModel:
                     name="Search",
                     description="Ask natural language questions over company docs.",
                     user_stories=[
-                        UserStory(as_a="Employee", i_want="to ask questions", so_that="I find answers fast")
+                        UserStory(
+                            as_a="Employee",
+                            i_want="to ask questions",
+                            so_that="I find answers fast",
+                        )
                     ],
                 ),
                 FeatureModule(
                     name="Ingestion",
                     description="Connect and sync data sources.",
                     user_stories=[
-                        UserStory(as_a="Admin", i_want="to connect Google Drive", so_that="docs are searchable")
+                        UserStory(
+                            as_a="Admin",
+                            i_want="to connect Google Drive",
+                            so_that="docs are searchable",
+                        )
                     ],
                 ),
                 FeatureModule(
                     name="Admin",
                     description="Manage access and data sources.",
                     user_stories=[
-                        UserStory(as_a="Admin", i_want="to control permissions", so_that="PII stays protected")
+                        UserStory(
+                            as_a="Admin",
+                            i_want="to control permissions",
+                            so_that="PII stays protected",
+                        )
                     ],
                 ),
             ],
             system_architecture=[
                 ServiceComponent(name="WebApp", responsibility="UI", technology="Next.js"),
-                ServiceComponent(name="Api", responsibility="Auth + query orchestration", technology="FastAPI"),
-                ServiceComponent(name="Retriever", responsibility="Vector search", technology="pgvector"),
-                ServiceComponent(name="LLM", responsibility="Answer generation", technology="gpt-4o-mini"),
+                ServiceComponent(
+                    name="Api", responsibility="Auth + query orchestration", technology="FastAPI"
+                ),
+                ServiceComponent(
+                    name="Retriever", responsibility="Vector search", technology="pgvector"
+                ),
+                ServiceComponent(
+                    name="LLM", responsibility="Answer generation", technology="gpt-4o-mini"
+                ),
             ],
             components=[
                 ArchitectureComponent(
@@ -144,9 +162,15 @@ def _fixture_for(schema: type[BaseModel]) -> BaseModel:
                 error_model="JSON {code,message,details?} + 4xx/5xx",
                 rate_limiting="Per-user 60 rpm at gateway",
                 endpoints=[
-                    ApiEndpoint(method="POST", path="/api/query", purpose="Ask a question", auth="user"),
-                    ApiEndpoint(method="POST", path="/api/sources", purpose="Connect a source", auth="admin"),
-                    ApiEndpoint(method="GET", path="/api/plan/{id}", purpose="Fetch plan", auth="user"),
+                    ApiEndpoint(
+                        method="POST", path="/api/query", purpose="Ask a question", auth="user"
+                    ),
+                    ApiEndpoint(
+                        method="POST", path="/api/sources", purpose="Connect a source", auth="admin"
+                    ),
+                    ApiEndpoint(
+                        method="GET", path="/api/plan/{id}", purpose="Fetch plan", auth="user"
+                    ),
                 ],
             ),
             ui_ux_approach=UiUxApproach(
@@ -170,14 +194,36 @@ def _fixture_for(schema: type[BaseModel]) -> BaseModel:
                 cost_notes="Start with hosted LLM; monitor token burn",
             ),
             build_phases=[
-                BuildPhase(phase="Phase 1", goal="Skeleton", deliverables=["Auth", "Query API", "UI shell"]),
-                BuildPhase(phase="Phase 2", goal="MVP", deliverables=["Ingestion", "Vector search", "Citations"]),
-                BuildPhase(phase="Phase 3", goal="Polish", deliverables=["Eval harness", "Admin UX", "Caching"]),
+                BuildPhase(
+                    phase="Phase 1", goal="Skeleton", deliverables=["Auth", "Query API", "UI shell"]
+                ),
+                BuildPhase(
+                    phase="Phase 2",
+                    goal="MVP",
+                    deliverables=["Ingestion", "Vector search", "Citations"],
+                ),
+                BuildPhase(
+                    phase="Phase 3",
+                    goal="Polish",
+                    deliverables=["Eval harness", "Admin UX", "Caching"],
+                ),
             ],
             risk_analysis=[
-                RiskItem(risk="Hallucinations", impact="Trust loss", mitigation="Citations + refusal policy"),
-                RiskItem(risk="PII leakage", impact="Compliance", mitigation="Redaction + access controls"),
-                RiskItem(risk="Cost spikes", impact="Budget", mitigation="Caching + limits + smaller model"),
+                RiskItem(
+                    risk="Hallucinations",
+                    impact="Trust loss",
+                    mitigation="Citations + refusal policy",
+                ),
+                RiskItem(
+                    risk="PII leakage",
+                    impact="Compliance",
+                    mitigation="Redaction + access controls",
+                ),
+                RiskItem(
+                    risk="Cost spikes",
+                    impact="Budget",
+                    mitigation="Caching + limits + smaller model",
+                ),
             ],
             mermaid_system_architecture="flowchart LR\nuser[User] --> web[WebApp]\nweb --> api[Api]\napi --> retr[Retriever]\napi --> llm[LLM]\nretr --> db[(Postgres)]\n",
             mermaid_request_data_flow="sequenceDiagram\nparticipant U as User\nparticipant W as Web\nparticipant A as API\nparticipant R as Retriever\nparticipant L as LLM\nU->>W: Ask\nW->>A: POST /api/query\nA->>R: search\nR-->>A: topK\nA->>L: generate\nL-->>A: answer+cites\nA-->>W: response\n",
@@ -366,10 +412,12 @@ def test_get_plan_404_for_unknown_id() -> None:
 
 def test_chat_clarify_branch_when_idea_short_and_no_answers(mock_llm: None) -> None:
     body = {"idea": "Build a chatbot."}
-    with TestClient(create_app()) as client:
-        with client.stream("POST", "/api/chat", json=body) as response:
-            assert response.status_code == 200
-            text = response.read().decode("utf-8")
+    with (
+        TestClient(create_app()) as client,
+        client.stream("POST", "/api/chat", json=body) as response,
+    ):
+        assert response.status_code == 200
+        text = response.read().decode("utf-8")
 
     events = _parse_sse(text)
     event_types = [e["event"] for e in events]

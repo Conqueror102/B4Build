@@ -39,27 +39,28 @@ async def get_plan(plan_id: str) -> PlanResponse:
     async with get_session() as session:
         repo = PlansRepository(session)
         plan_model = await repo.get_latest_full_plan(pid)
-    
+
     if plan_model is not None:
         return PlanResponse(plan=plan_model)
-    
+
     # Fall back to in-memory store (for plans in progress)
     p = store.get(plan_id)
     if p is None:
         p = store.get(str(pid))
-    
+
     if p is not None:
         return PlanResponse(plan=p)
-    
+
     # If not in store, check if plan exists in DB but just doesn't have a version yet
     # This happens during initial plan creation before any phases complete
     async with get_session() as session:
         repo = PlansRepository(session)
         plan_record = await repo.get_plan(pid)
-        
+
         if plan_record is not None:
             # Return a minimal plan structure indicating it's in progress
             from ..schemas.plan import FullPlan
+
             minimal_plan = FullPlan(
                 plan_id=str(plan_record.id),
                 title=plan_record.title,
@@ -67,7 +68,7 @@ async def get_plan(plan_id: str) -> PlanResponse:
                 total_cost_usd=float(plan_record.total_cost_usd or 0),
             )
             return PlanResponse(plan=minimal_plan)
-    
+
     raise HTTPException(status_code=404, detail=f"plan not found: {plan_id}")
 
 
@@ -129,6 +130,7 @@ async def get_conversation(plan_id: str) -> dict[str, Any]:
 
     async with get_session() as session:
         from ..db.repositories.conversations import ConversationsRepository
+
         repo = ConversationsRepository(session)
         turns = await repo.list_turns_for_plan(pid)
 

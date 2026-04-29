@@ -8,9 +8,9 @@ from pydantic import BaseModel, Field
 
 
 class IntentClassification(BaseModel):
-    intent: Literal["start_new", "edit", "what_if", "deep_dive", "challenge", "clarify_response", "chat"] = Field(
-        description="The user's core intent in their message"
-    )
+    intent: Literal[
+        "start_new", "edit", "what_if", "deep_dive", "challenge", "clarify_response", "chat"
+    ] = Field(description="The user's core intent in their message")
     affected_phases: list[str] | None = Field(
         description=(
             "List of canonical phase IDs affected by the intent, if it's an edit or what_if. "
@@ -30,4 +30,3 @@ class IntentClassification(BaseModel):
     clarifying_question: str | None = Field(
         description="If needs_clarification is True, the specific question to ask the user"
     )
-

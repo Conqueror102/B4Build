@@ -64,8 +64,12 @@ class FullPlan(BaseModel):
 
     red_team: RedTeamCritique | None = None
 
-    executive_summary: str | None = Field(default=None, description="3-5 sentence TL;DR for the user")
-    next_steps: list[str] | None = Field(default=None, description="Concrete actions for the user this week")
+    executive_summary: str | None = Field(
+        default=None, description="3-5 sentence TL;DR for the user"
+    )
+    next_steps: list[str] | None = Field(
+        default=None, description="Concrete actions for the user this week"
+    )
 
     total_cost_usd: float = Field(default=0.0, description="LLM spend across all phases")
 

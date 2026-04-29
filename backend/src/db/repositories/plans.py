@@ -69,9 +69,7 @@ class PlansRepository:
         red_team_json: dict | None = None,
         notes: str | None = None,
     ) -> PlanVersion:
-        max_stmt = select(func.max(PlanVersion.version_num)).where(
-            PlanVersion.plan_id == plan_id
-        )
+        max_stmt = select(func.max(PlanVersion.version_num)).where(PlanVersion.plan_id == plan_id)
         max_v = (await self.session.execute(max_stmt)).scalar() or 0
         next_v = max_v + 1
         version = PlanVersion(

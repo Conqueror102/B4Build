@@ -16,6 +16,9 @@ jobs:
   lint-and-test:
     name: Lint and Test
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
 
     steps:
       - name: Checkout code
@@ -26,35 +29,29 @@ jobs:
         with:
           python-version: '3.12'
 
+      # Cache uv’s download + venv so repeat runs are much faster than cold `uv sync`.
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            **/uv.lock
+            **/pyproject.toml
 
       - name: Install dependencies
-        run: |
-          cd backend
-          uv sync
+        run: uv sync --frozen
 
-      - name: Run ruff (linter)
-        run: |
-          cd backend
-          uv run ruff check .
+      # One step: ruff is fast; splitting only adds overhead.
+      - name: Ruff (lint + format check)
+        run: uv run ruff check . && uv run ruff format --check .
 
-      - name: Run ruff (formatter check)
-        run: |
-          cd backend
-          uv run ruff format --check .
+      - name: Mypy
+        run: uv run mypy src
 
-      - name: Run mypy (type checker)
-        run: |
-          cd backend
-          uv run mypy src
+      - name: Tests
+        run: uv run pytest tests/ --cov=src --cov-report=term-missing
 
-      - name: Run tests
-        run: |
-          cd backend
-          uv run pytest tests/ -v --cov=src --cov-report=term-missing
-
-      - name: Build Docker image (smoke test)
-        run: |
-          cd backend
-          docker build -t b4build-backend:test .
+      # Often the slowest step; keep it on main so merges still prove the image builds.
+      - name: Docker image (smoke)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: docker build -t b4build-backend:test .

@@ -78,9 +78,7 @@ def get_engine() -> AsyncEngine:
 
 def get_session_factory() -> async_sessionmaker[AsyncSession]:
     if _session_factory is None:
-        raise RuntimeError(
-            "Session factory not initialized. Call init_engine() first."
-        )
+        raise RuntimeError("Session factory not initialized. Call init_engine() first.")
     return _session_factory
 
 

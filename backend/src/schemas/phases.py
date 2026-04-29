@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, model_validator, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 
 class PressureTestResult(BaseModel):
@@ -146,9 +146,7 @@ class SecurityDesign(BaseModel):
     pii_handling: str
     prompt_injection_controls: list[str]
     secrets_and_keys: list[str]
-    security_basics: list[str] = Field(
-        description="Rate limiting, validation, audit logging, etc."
-    )
+    security_basics: list[str] = Field(description="Rate limiting, validation, audit logging, etc.")
 
 
 class DeploymentPlan(BaseModel):
@@ -212,7 +210,7 @@ class Architecture(BaseModel):
 
 class OpenSourceRepo(BaseModel):
     """An open-source repository recommendation."""
-    
+
     name: str = Field(description="Repository name (owner/repo)")
     url: str = Field(description="GitHub URL")
     stars: int = Field(description="Number of stars")
@@ -348,7 +346,9 @@ def normalize_infrastructure_payload(raw: dict[str, Any]) -> dict[str, Any]:
             x
             for x in (
                 f"Hosting: {raw.get('hosting')}" if raw.get("hosting") else None,
-                f"Inference: {raw.get('inference_provider')}" if raw.get("inference_provider") else None,
+                f"Inference: {raw.get('inference_provider')}"
+                if raw.get("inference_provider")
+                else None,
                 f"Vector: {raw.get('vector_store')}" if raw.get("vector_store") else None,
                 f"Queue: {raw.get('queue')}" if raw.get("queue") else None,
                 f"Secrets: {raw.get('secrets_manager')}" if raw.get("secrets_manager") else None,
@@ -395,7 +395,11 @@ def normalize_infrastructure_payload(raw: dict[str, Any]) -> dict[str, Any]:
         def_list = mvp_obj.get("explicitly_deferred_to_production") or []
         if isinstance(def_list, list) and def_list:
             mvp_layers.append(
-                _layer("Deferred to production", "Items intentionally skipped at MVP.", [str(x) for x in def_list])
+                _layer(
+                    "Deferred to production",
+                    "Items intentionally skipped at MVP.",
+                    [str(x) for x in def_list],
+                )
             )
     if not mvp_layers:
         mvp_layers = [_layer("MVP", raw.get("rationale") or "—", [])]
@@ -416,7 +420,9 @@ def normalize_infrastructure_payload(raw: dict[str, Any]) -> dict[str, Any]:
         ch = prod_obj.get("what_changes_from_mvp") or []
         if isinstance(ch, list) and ch:
             prod_layers.append(
-                _layer("Changes from MVP", "Upgrades when moving to production.", [str(x) for x in ch])
+                _layer(
+                    "Changes from MVP", "Upgrades when moving to production.", [str(x) for x in ch]
+                )
             )
     if not prod_layers:
         prod_layers = [_layer("Production", raw.get("rationale") or "—", [])]
@@ -461,9 +467,7 @@ class CostLineItem(BaseModel):
     """One row: tool / infra cost tied back to prior phases."""
 
     item: str = Field(description="Short label, e.g. 'Vercel (frontend)' or 'OpenAI API'")
-    tied_to: str = Field(
-        description="Traceability: e.g. P2 component, P3 tool name, P4 layer name"
-    )
+    tied_to: str = Field(description="Traceability: e.g. P2 component, P3 tool name, P4 layer name")
     cost_kind: CostKind
     monthly_min_usd: float | None = Field(
         default=None, description="Lower monthly $ if knowable; null if free or unknown"
@@ -471,9 +475,7 @@ class CostLineItem(BaseModel):
     monthly_max_usd: float | None = Field(
         default=None, description="Upper monthly $; null if N/A or unknown"
     )
-    notes: str = Field(
-        description="Free tier, usage-based math, or caveats; keep concise"
-    )
+    notes: str = Field(description="Free tier, usage-based math, or caveats; keep concise")
 
 
 def normalize_cost_model_payload(raw: dict[str, Any]) -> dict[str, Any]:
@@ -532,7 +534,7 @@ class CostModel(BaseModel):
 
     line_items: list[CostLineItem] = Field(
         min_length=1,
-        description="At least one row; prefer 5+ covering P2–P4 by name",
+        description="At least one row; prefer 5+ covering P2-P4 by name",
     )
     stack_cost_summary: str = Field(
         description="2-4 sentences on how the stack (arch + tools + infra) maps to $"

@@ -44,9 +44,7 @@ def shrink_state_to_token_budget(
     s["metadata"] = meta
     for _ in range(12):
         msgs = build_messages(s)
-        text = "\n".join(
-            m.get("content", "") for m in msgs if isinstance(m.get("content"), str)
-        )
+        text = "\n".join(m.get("content", "") for m in msgs if isinstance(m.get("content"), str))
         if _count_tokens(text, model=model) <= max_tokens:
             return s
         outputs = s.get("phase_outputs") or {}

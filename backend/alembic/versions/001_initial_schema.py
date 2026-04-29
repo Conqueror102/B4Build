@@ -5,6 +5,7 @@ Revises:
 Create Date: 2026-04-24
 
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -26,7 +27,12 @@ def upgrade() -> None:
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("clerk_user_id", sa.String(length=255), nullable=True),
         sa.Column("email", sa.String(length=320), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_users_clerk_user_id", "users", ["clerk_user_id"], unique=True)
@@ -40,8 +46,18 @@ def upgrade() -> None:
         sa.Column("current_version_id", sa.Uuid(), nullable=True),
         sa.Column("status", sa.String(length=32), nullable=False, server_default="in_progress"),
         sa.Column("total_cost_usd", sa.Numeric(10, 4), nullable=False, server_default="0"),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -56,7 +72,12 @@ def upgrade() -> None:
         sa.Column("full_plan_json", JSONType, nullable=False),
         sa.Column("red_team_json", JSONType, nullable=True),
         sa.Column("notes", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.ForeignKeyConstraint(["plan_id"], ["plans.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("plan_id", "version_num", name="uq_plan_versions_plan_version"),
@@ -81,7 +102,12 @@ def upgrade() -> None:
         sa.Column("content", sa.Text(), nullable=False),
         sa.Column("intent", sa.String(length=64), nullable=True),
         sa.Column("affected_phases", JSONType, nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.ForeignKeyConstraint(["plan_id"], ["plans.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -99,7 +125,12 @@ def upgrade() -> None:
         sa.Column("cost_usd", sa.Numeric(10, 6), nullable=False, server_default="0"),
         sa.Column("latency_ms", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("model", sa.String(length=64), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.ForeignKeyConstraint(["plan_id"], ["plans.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["plan_version_id"], ["plan_versions.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
@@ -112,7 +143,12 @@ def upgrade() -> None:
         sa.Column("spend_date", sa.Date(), nullable=False),
         sa.Column("total_cost_usd", sa.Numeric(10, 6), nullable=False, server_default="0"),
         sa.Column("request_count", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.text("now()"),
+            nullable=False,
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_daily_spend_spend_date", "daily_spend", ["spend_date"], unique=True)

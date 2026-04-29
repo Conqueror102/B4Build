@@ -32,12 +32,12 @@ from .plan import FullPlan, RedTeamCritique
 __all__ = [
     "Architecture",
     "BuildBuyTrain",
-    "InfraLayer",
     "ChatRequest",
     "ChatStreamEvent",
     "CostLineItem",
     "CostModel",
     "FullPlan",
+    "InfraLayer",
     "Infrastructure",
     "IntakeAnswers",
     "ObservabilityPlan",

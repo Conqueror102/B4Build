@@ -34,4 +34,3 @@ def test_normalize_phase_list_dedup_and_order() -> None:
     got = normalize_phase_list(["P5", "phase_2", "P5", "phase_6.5", "P0"])
     assert got == ["phase_0", "phase_2", "phase_5", "phase_6_5"]
     assert got == [p for p in CANONICAL_PHASE_ORDER if p in set(got)]
-

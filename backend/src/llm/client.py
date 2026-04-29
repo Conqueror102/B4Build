@@ -166,7 +166,7 @@ class LLMClient:
         # Optional fields should still be present as keys, but can be `null` per their schema.
         if isinstance(json_schema.get("properties"), dict):
             json_schema["required"] = list(json_schema["properties"].keys())
-        
+
         # Also set additionalProperties=false for all nested object schemas in $defs
         if isinstance(json_schema.get("$defs"), dict):
             for def_schema in json_schema["$defs"].values():

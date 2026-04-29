@@ -26,7 +26,9 @@ def _next_missing_phase(state: AdvisorState) -> str | None:
     """Return the next phase id that has not produced output yet."""
     outputs = state.get("phase_outputs", {}) or {}
     meta = state.get("metadata", {}) or {}
-    effective_order = normalize_phase_list(meta.get("active_phase_order") or PHASE_ORDER, default_order=PHASE_ORDER)
+    effective_order = normalize_phase_list(
+        meta.get("active_phase_order") or PHASE_ORDER, default_order=PHASE_ORDER
+    )
     if not effective_order:
         effective_order = list(PHASE_ORDER)
 
@@ -52,7 +54,7 @@ async def coordinator_node(state: AdvisorState) -> dict[str, Any]:
     # This prevents re-asking clarifying questions when the user is iterating on an existing plan
     has_plan = state.get("final_plan") is not None
     has_phases = bool(state.get("phase_outputs", {}))
-    
+
     if not has_plan and not has_phases and not _intake_complete(state):
         logger.info("coordinator.routing", request_id=request_id, decision="clarify")
         return {"current_phase": "clarify"}
@@ -72,17 +74,23 @@ async def coordinator_node(state: AdvisorState) -> dict[str, Any]:
             # Intercept phase_4/phase_5 to run researcher first
             last_researched = state.get("metadata", {}).get("last_researched_phase")
             if nxt in ("phase_4", "phase_5") and last_researched != nxt:
-                logger.info("coordinator.routing", request_id=request_id, decision="research", phase=nxt)
+                logger.info(
+                    "coordinator.routing", request_id=request_id, decision="research", phase=nxt
+                )
                 meta = dict(state.get("metadata", {}) or {})
                 meta["last_researched_phase"] = nxt
                 return {"current_phase": "research", "metadata": meta}
 
             # If normalization failed, drop it instead of routing to an unknown phase.
             if nxt not in PHASE_ORDER:
-                logger.warning("coordinator.dirty_phase_unknown", request_id=request_id, phase=nxt_raw)
+                logger.warning(
+                    "coordinator.dirty_phase_unknown", request_id=request_id, phase=nxt_raw
+                )
                 return {"dirty_phases": dirty[1:], "current_phase": None}
 
-            logger.info("coordinator.routing", request_id=request_id, decision="rerun_dirty", phase=nxt)
+            logger.info(
+                "coordinator.routing", request_id=request_id, decision="rerun_dirty", phase=nxt
+            )
             return {"current_phase": nxt, "dirty_phases": dirty[1:]}  # Pop the first
 
         intent_metadata = state.get("metadata", {}).get("intent_classification")
@@ -101,7 +109,9 @@ async def coordinator_node(state: AdvisorState) -> dict[str, Any]:
                 logger.info("coordinator.routing", request_id=request_id, decision="chat_done")
                 return {"current_phase": None}
 
-            logger.info("coordinator.routing", request_id=request_id, decision="respond", intent=intent_str)
+            logger.info(
+                "coordinator.routing", request_id=request_id, decision="respond", intent=intent_str
+            )
             return {"current_phase": "respond"}
 
         # If we have intent_metadata and no dirty phases, we finished re-running the phases!

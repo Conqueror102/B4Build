@@ -66,8 +66,12 @@ async def conversation_handler_node(state: AdvisorState) -> dict[str, Any]:
         # Get plan context to help with classification
         plan_context = ""
         if state.get("final_plan"):
-            plan_dict = state["final_plan"].model_dump(mode="json") if hasattr(state["final_plan"], "model_dump") else state["final_plan"]
-            plan_context = f"\nThe plan includes these phases: {', '.join([k for k in plan_dict.keys() if k not in ['plan_id', 'created_at', 'total_cost_usd']])}"
+            plan_dict = (
+                state["final_plan"].model_dump(mode="json")
+                if hasattr(state["final_plan"], "model_dump")
+                else state["final_plan"]
+            )
+            plan_context = f"\nThe plan includes these phases: {', '.join([k for k in plan_dict if k not in ['plan_id', 'created_at', 'total_cost_usd']])}"
 
         system_msg = (
             "You are an intent classifier for the AI Build Advisor. The user just sent a message about their existing plan.\n"
@@ -87,7 +91,7 @@ async def conversation_handler_node(state: AdvisorState) -> dict[str, Any]:
             intent = await client.complete_structured(
                 messages=[
                     {"role": "system", "content": system_msg},
-                    {"role": "user", "content": latest_msg}
+                    {"role": "user", "content": latest_msg},
                 ],
                 schema=IntentClassification,
                 request_id=request_id,
@@ -99,7 +103,12 @@ async def conversation_handler_node(state: AdvisorState) -> dict[str, Any]:
             logger.error("classify.failed", request_id=request_id, error=str(exc))
             return {"errors": [f"classify: {exc}"], "current_phase": None}
 
-        logger.info("classify.complete", request_id=request_id, intent=intent.intent, target_phase=intent.target_phase)
+        logger.info(
+            "classify.complete",
+            request_id=request_id,
+            intent=intent.intent,
+            target_phase=intent.target_phase,
+        )
 
         # Now we route based on the intent. For now, we will just return the intent
         # in the metadata so the coordinator/builder can route it.
