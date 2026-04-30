@@ -139,27 +139,39 @@ def build_search_query(idea: str, architecture_pattern: str | None = None) -> st
         architecture_pattern: Architecture pattern from Phase 2 (e.g., "rag", "fine-tuning")
 
     Returns:
-        Search query string
+        Search query string optimized for GitHub search
     """
-    # Extract key terms from the idea
-    query_parts = []
-
-    # Add architecture pattern if available
+    # Extract key technical terms (remove common words)
+    stop_words = {
+        "a", "an", "the", "for", "to", "of", "in", "on", "at", "by", "with",
+        "that", "this", "it", "is", "are", "was", "were", "be", "been",
+        "have", "has", "had", "do", "does", "did", "will", "would", "should",
+        "could", "may", "might", "must", "can", "i", "you", "we", "they",
+        "my", "your", "our", "their", "app", "application", "tool", "system",
+        "build", "create", "make", "develop"
+    }
+    
+    # Extract meaningful keywords from idea
+    words = idea.lower().split()
+    keywords = [w.strip(".,!?;:") for w in words if w.strip(".,!?;:") not in stop_words and len(w) > 3]
+    
+    # Take top 3-5 most relevant keywords
+    query_parts = keywords[:5]
+    
+    # Add architecture-specific terms
     if architecture_pattern:
-        if architecture_pattern.lower() == "rag":
-            query_parts.append("RAG retrieval augmented generation")
-        elif "fine-tun" in architecture_pattern.lower():
-            query_parts.append("fine-tuning LLM")
-        elif "agent" in architecture_pattern.lower():
-            query_parts.append("AI agent")
-        else:
-            query_parts.append(architecture_pattern)
-
-    # Add common AI/ML terms
-    query_parts.append("AI")
-
-    # Limit to first 100 chars of idea to avoid overly long queries
-    idea_snippet = idea[:100]
-    query_parts.append(idea_snippet)
-
-    return " ".join(query_parts)
+        pattern_lower = architecture_pattern.lower()
+        if "rag" in pattern_lower:
+            query_parts.insert(0, "RAG")
+            query_parts.insert(1, "vector-search")
+        elif "fine-tun" in pattern_lower:
+            query_parts.insert(0, "fine-tuning")
+            query_parts.insert(1, "LLM")
+        elif "agent" in pattern_lower:
+            query_parts.insert(0, "agent")
+            query_parts.insert(1, "LLM")
+        elif "pipeline" in pattern_lower:
+            query_parts.insert(0, "pipeline")
+    
+    # Limit to 5-6 keywords for best results
+    return " ".join(query_parts[:6])

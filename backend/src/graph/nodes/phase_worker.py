@@ -59,8 +59,8 @@ async def phase_worker_node(state: AdvisorState) -> dict[str, Any]:
             search_result = await search_github_repos(
                 query,
                 max_results=10,
-                min_stars=50,
-                updated_within_months=12,
+                min_stars=20,  # Lower threshold to include more projects
+                updated_within_months=24,  # Include stable, mature projects
             )
 
             github_repos = [repo.model_dump() for repo in search_result.repos]

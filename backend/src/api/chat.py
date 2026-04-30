@@ -69,6 +69,7 @@ async def _run_graph_stream(
     req: ChatRequest,
     *,
     plan_u: uuid.UUID,
+    user_id: uuid.UUID,
 ) -> AsyncIterator[str]:
     request_id = uuid.uuid4().hex
     token = usage_context.set_active_plan_id(plan_u)
@@ -101,7 +102,16 @@ async def _run_graph_stream(
         state_update["metadata"]["clarifying_answers"] = req.clarifying_answers
 
     cp = get_checkpointer()
-    run_config: dict[str, Any] = {"configurable": {"thread_id": str(plan_u)}}
+    run_config: dict[str, Any] = {
+        "configurable": {"thread_id": str(plan_u)},
+        "run_name": f"chat_{request_id[:8]}",
+        "tags": ["chat", "streaming"],
+        "metadata": {
+            "request_id": request_id,
+            "plan_id": str(plan_u),
+            "user_id": str(user_id),
+        },
+    }
 
     seen_phase_ids: set[str] = set()
     it = (
@@ -324,7 +334,7 @@ async def chat(req: ChatRequest, request: Request) -> StreamingResponse | JSONRe
             if await request.is_disconnected():
                 logger.info("chat.client_disconnected_after_init", plan_id=str(plan_u))
                 return
-            async for chunk in _run_graph_stream(req, plan_u=plan_u):
+            async for chunk in _run_graph_stream(req, plan_u=plan_u, user_id=uu):
                 if await request.is_disconnected():
                     logger.info("chat.client_disconnected", plan_id=str(plan_u))
                     raise asyncio.CancelledError

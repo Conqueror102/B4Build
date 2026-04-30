@@ -12,14 +12,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.requests import Request
 
+# CRITICAL: Configure LangSmith BEFORE importing any LangGraph/LangChain modules
+# LangChain's tracing system initializes on import and reads os.environ at that time
+from .settings import get_settings
+from .tracing_env import configure_langsmith_env
+
+configure_langsmith_env(get_settings())
+
+# Now safe to import modules that use LangGraph/LangChain
 from .api import chat, export, health, plan
 from .db import models
 from .db.bootstrap import create_all_sqlite_schema, ensure_default_user_exists
 from .db.session import dispose_engine, get_engine, init_engine
 from .logging_config import configure_logging, get_logger
 from .services import checkpointing
-from .settings import get_settings
-from .tracing_env import configure_langsmith_env
 
 
 @asynccontextmanager
@@ -27,7 +33,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Run on startup and shutdown."""
     configure_logging()
     settings = get_settings()
-    configure_langsmith_env(settings)
+    # LangSmith env already configured at module level (before imports)
     logger = get_logger(__name__)
 
     dsn = (settings.sentry_dsn or "").strip()
@@ -61,6 +67,8 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         reasoning_model=settings.openai_reasoning_model,
         daily_spend_cap_usd=settings.daily_openai_spend_cap,
         per_request_cost_cap_usd=settings.per_request_cost_cap,
+        langsmith_tracing=settings.langchain_tracing_v2,
+        langsmith_project=settings.langchain_project if settings.langchain_tracing_v2 else None,
     )
 
     yield
